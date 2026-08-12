@@ -14,18 +14,19 @@ export default async function handler(req, res) {
   try {
     switch (req.method) {
       case 'GET':
-        // Recupera tutti gli obiettivi
+        console.log('Fetching goals from Upstash...');
         const goals = await getAllGoals();
+        console.log('Goals fetched:', goals.length);
         res.status(200).json(goals);
         break;
 
       case 'POST':
-        // Crea un nuovo obiettivo
         const { name, duration } = req.body;
         
+        console.log('Creating goal:', { name, duration });
+        
         if (!name || !duration) {
-          res.status(400).json({ error: 'Name and duration are required' });
-          return;
+          return res.status(400).json({ error: 'Name and duration are required' });
         }
 
         const goalId = `goal_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -40,6 +41,8 @@ export default async function handler(req, res) {
         };
 
         await saveGoal(goalId, newGoal);
+        console.log('Goal saved successfully:', goalId);
+        
         res.status(201).json(newGoal);
         break;
 
@@ -47,7 +50,11 @@ export default async function handler(req, res) {
         res.status(405).json({ error: 'Method not allowed' });
     }
   } catch (error) {
-    console.error('Upstash error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('API Error:', error);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 }
