@@ -6,12 +6,14 @@ import CalendarView from './components/CalendarView';
 
 function App() {
   const [goals, setGoals] = useState([]);
+  const [currentSection, setCurrentSection] = useState('home'); // 'home', 'goals'
   const [showAddGoal, setShowAddGoal] = useState(false);
   const [showDailyCheck, setShowDailyCheck] = useState(false);
-  const [viewMode, setViewMode] = useState('progress');
+  const [viewMode, setViewMode] = useState('progress'); // 'progress' o 'calendar'
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showDeleteAll, setShowDeleteAll] = useState(false);
+  const [showViewMenu, setShowViewMenu] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
@@ -199,28 +201,27 @@ function App() {
       margin: '0 auto',
       padding: '20px',
       fontFamily: "'Courier New', monospace",
+      minHeight: '100vh',
     },
     header: {
       textAlign: 'center',
       marginBottom: '30px',
-      border: '1px solid #00ff00',
       padding: '20px',
-      backgroundColor: 'rgba(0, 255, 0, 0.05)',
+      borderBottom: '1px solid #00ff00',
       position: 'relative',
     },
     title: {
-      fontSize: '3em',
+      fontSize: '2.5em',
       marginBottom: '10px',
       color: '#00ff00',
-      textShadow: '0 0 10px #00ff00, 0 0 20px #00ff00',
-      letterSpacing: '5px',
-      fontWeight: 'bold',
+      letterSpacing: '3px',
+      fontWeight: 'normal',
     },
     subtitle: {
-      fontSize: '1.1em',
-      opacity: '0.8',
+      fontSize: '0.9em',
+      opacity: '0.7',
       color: '#00ff00',
-      letterSpacing: '2px',
+      letterSpacing: '1px',
     },
     timestamp: {
       position: 'absolute',
@@ -228,18 +229,55 @@ function App() {
       right: '20px',
       fontSize: '0.8em',
       color: '#00ff00',
-      opacity: '0.7',
+      opacity: '0.6',
     },
-    buttonContainer: {
+    mainMenu: {
       display: 'flex',
       justifyContent: 'center',
-      gap: '15px',
+      gap: '20px',
       marginBottom: '30px',
       flexWrap: 'wrap',
     },
+    menuCard: {
+      padding: '30px',
+      border: '1px solid #00ff00',
+      borderRadius: '4px',
+      cursor: 'pointer',
+      transition: 'all 0.3s',
+      textAlign: 'center',
+      minWidth: '200px',
+      backgroundColor: 'rgba(0, 255, 0, 0.02)',
+    },
+    menuCardTitle: {
+      fontSize: '1.2em',
+      color: '#00ff00',
+      marginBottom: '10px',
+      letterSpacing: '2px',
+    },
+    menuCardDescription: {
+      fontSize: '0.8em',
+      color: '#00cc00',
+      opacity: '0.7',
+    },
+    toolbar: {
+      display: 'flex',
+      justifyContent: 'center',
+      gap: '10px',
+      marginBottom: '20px',
+      flexWrap: 'wrap',
+      padding: '15px',
+      backgroundColor: 'rgba(0, 255, 0, 0.02)',
+      borderRadius: '4px',
+      border: '1px solid rgba(0, 255, 0, 0.2)',
+    },
+    buttonGroup: {
+      display: 'flex',
+      gap: '10px',
+      alignItems: 'center',
+    },
     button: {
-      padding: '12px 24px',
-      fontSize: '14px',
+      padding: '10px 20px',
+      fontSize: '12px',
       border: '1px solid #00ff00',
       borderRadius: '4px',
       cursor: 'pointer',
@@ -251,25 +289,29 @@ function App() {
       textTransform: 'uppercase',
       fontFamily: "'Courier New', monospace",
     },
-    addButton: {
-      borderColor: '#00ff00',
+    dropdownContainer: {
+      position: 'relative',
+      display: 'inline-block',
+    },
+    dropdownMenu: {
+      position: 'absolute',
+      top: '100%',
+      left: '0',
+      backgroundColor: '#0a0a0a',
+      border: '1px solid #00ff00',
+      borderRadius: '4px',
+      marginTop: '5px',
+      zIndex: 1000,
+      minWidth: '180px',
+    },
+    dropdownItem: {
+      padding: '10px 20px',
+      cursor: 'pointer',
+      transition: 'all 0.3s',
       color: '#00ff00',
-    },
-    checkButton: {
-      borderColor: '#00ccff',
-      color: '#00ccff',
-    },
-    calendarButton: {
-      borderColor: '#ff00ff',
-      color: '#ff00ff',
-    },
-    progressButton: {
-      borderColor: '#ff9900',
-      color: '#ff9900',
-    },
-    deleteAllButton: {
-      borderColor: '#ff4444',
-      color: '#ff4444',
+      fontSize: '12px',
+      letterSpacing: '1px',
+      borderBottom: '1px solid rgba(0, 255, 0, 0.1)',
     },
     errorMessage: {
       backgroundColor: 'rgba(255, 0, 0, 0.1)',
@@ -286,7 +328,7 @@ function App() {
       fontSize: '18px',
       padding: '40px',
       border: '1px solid #00ff00',
-      backgroundColor: 'rgba(0, 255, 0, 0.05)',
+      backgroundColor: 'rgba(0, 255, 0, 0.03)',
     },
     syncStatus: {
       textAlign: 'center',
@@ -297,7 +339,7 @@ function App() {
       letterSpacing: '1px',
     },
     dangerZone: {
-      backgroundColor: 'rgba(255, 0, 0, 0.1)',
+      backgroundColor: 'rgba(255, 0, 0, 0.05)',
       padding: '20px',
       borderRadius: '4px',
       marginBottom: '30px',
@@ -309,6 +351,18 @@ function App() {
       textAlign: 'center',
       letterSpacing: '2px',
     },
+    backButton: {
+      marginBottom: '20px',
+      padding: '8px 16px',
+      backgroundColor: 'transparent',
+      color: '#00ff00',
+      border: '1px solid #00ff00',
+      borderRadius: '4px',
+      cursor: 'pointer',
+      fontFamily: "'Courier New', monospace",
+      fontSize: '12px',
+      letterSpacing: '1px',
+    },
   };
 
   if (loading && goals.length === 0) {
@@ -318,22 +372,73 @@ function App() {
           <h1 style={styles.title}>Organizer</h1>
         </div>
         <div style={styles.loadingMessage}>
-          <h2>Inizializzazione...</h2>
-          <p>Connessione al database...</p>
+          <h2>Initializing...</h2>
+          <p>Connecting to database...</p>
         </div>
       </div>
     );
   }
 
+  // Home Page
+  if (currentSection === 'home') {
+    return (
+      <div style={styles.container}>
+        <div style={styles.header}>
+          <h1 style={styles.title}>Organizer</h1>
+          <p style={styles.subtitle}>// Personal Task Management System</p>
+          <div style={styles.timestamp}>
+            {currentTime.toLocaleString('it-IT')}
+          </div>
+        </div>
+
+        <div style={styles.mainMenu}>
+          <div 
+            style={styles.menuCard}
+            onClick={() => setCurrentSection('goals')}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = 'rgba(0, 255, 0, 0.1)';
+              e.target.style.boxShadow = '0 0 20px rgba(0, 255, 0, 0.2)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = 'rgba(0, 255, 0, 0.02)';
+              e.target.style.boxShadow = 'none';
+            }}
+          >
+            <div style={styles.menuCardTitle}>[ OBJECTIVES ]</div>
+            <div style={styles.menuCardDescription}>
+              Track your daily goals
+            </div>
+          </div>
+        </div>
+
+        <div style={styles.syncStatus}>
+          <p>[ SYSTEM READY ] | [ {currentTime.toLocaleTimeString('it-IT')} ]</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Goals Section
   return (
     <div style={styles.container}>
       <div style={styles.header}>
         <h1 style={styles.title}>Organizer</h1>
-        <p style={styles.subtitle}>// Sistema di monitoraggio obiettivi</p>
+        <p style={styles.subtitle}>// Objectives Management</p>
         <div style={styles.timestamp}>
           {currentTime.toLocaleString('it-IT')}
         </div>
       </div>
+
+      <button 
+        style={styles.backButton}
+        onClick={() => {
+          setCurrentSection('home');
+          setShowAddGoal(false);
+          setShowDailyCheck(false);
+        }}
+      >
+        [ BACK TO MENU ]
+      </button>
 
       {error && (
         <div style={styles.errorMessage}>
@@ -359,78 +464,67 @@ function App() {
         </div>
       )}
 
-      <div style={styles.buttonContainer}>
-        <button 
-          style={{...styles.button, ...styles.addButton}}
-          onClick={() => setShowAddGoal(!showAddGoal)}
-          onMouseEnter={(e) => {
-            e.target.style.backgroundColor = 'rgba(0, 255, 0, 0.1)';
-            e.target.style.boxShadow = '0 0 20px rgba(0, 255, 0, 0.3)';
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.backgroundColor = 'transparent';
-            e.target.style.boxShadow = 'none';
-          }}
-        >
-          {showAddGoal ? '[ CLOSE ]' : '[ NEW TASK ]'}
-        </button>
-        
-        <button 
-          style={{...styles.button, ...styles.checkButton}}
-          onClick={() => setShowDailyCheck(!showDailyCheck)}
-          onMouseEnter={(e) => {
-            e.target.style.backgroundColor = 'rgba(0, 204, 255, 0.1)';
-            e.target.style.boxShadow = '0 0 20px rgba(0, 204, 255, 0.3)';
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.backgroundColor = 'transparent';
-            e.target.style.boxShadow = 'none';
-          }}
-        >
-          {showDailyCheck ? '[ CLOSE ]' : '[ DAILY CHECK ]'}
-        </button>
+      <div style={styles.toolbar}>
+        <div style={styles.buttonGroup}>
+          <button 
+            style={{...styles.button, borderColor: '#00ff00'}}
+            onClick={() => {
+              setShowAddGoal(!showAddGoal);
+              setShowDailyCheck(false);
+            }}
+          >
+            {showAddGoal ? '[ CLOSE ]' : '[ NEW TASK ]'}
+          </button>
+          
+          <button 
+            style={{...styles.button, borderColor: '#00ccff'}}
+            onClick={() => {
+              setShowDailyCheck(!showDailyCheck);
+              setShowAddGoal(false);
+            }}
+          >
+            {showDailyCheck ? '[ CLOSE ]' : '[ DAILY CHECK ]'}
+          </button>
+        </div>
+
+        <div style={styles.dropdownContainer}>
+          <button 
+            style={{...styles.button, borderColor: '#ff9900'}}
+            onClick={() => setShowViewMenu(!showViewMenu)}
+          >
+            [ VIEW: {viewMode === 'progress' ? 'PROGRESS' : 'CALENDAR'} ▼ ]
+          </button>
+          {showViewMenu && (
+            <div style={styles.dropdownMenu}>
+              <div 
+                style={styles.dropdownItem}
+                onClick={() => {
+                  setViewMode('progress');
+                  setShowViewMenu(false);
+                }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(255, 153, 0, 0.1)'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+              >
+                [ PROGRESS VIEW ]
+              </div>
+              <div 
+                style={styles.dropdownItem}
+                onClick={() => {
+                  setViewMode('calendar');
+                  setShowViewMenu(false);
+                }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(255, 153, 0, 0.1)'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+              >
+                [ CALENDAR VIEW ]
+              </div>
+            </div>
+          )}
+        </div>
 
         <button 
-          style={{...styles.button, ...styles.progressButton}}
-          onClick={() => setViewMode('progress')}
-          onMouseEnter={(e) => {
-            e.target.style.backgroundColor = 'rgba(255, 153, 0, 0.1)';
-            e.target.style.boxShadow = '0 0 20px rgba(255, 153, 0, 0.3)';
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.backgroundColor = 'transparent';
-            e.target.style.boxShadow = 'none';
-          }}
-        >
-          [ PROGRESS VIEW ]
-        </button>
-
-        <button 
-          style={{...styles.button, ...styles.calendarButton}}
-          onClick={() => setViewMode('calendar')}
-          onMouseEnter={(e) => {
-            e.target.style.backgroundColor = 'rgba(255, 0, 255, 0.1)';
-            e.target.style.boxShadow = '0 0 20px rgba(255, 0, 255, 0.3)';
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.backgroundColor = 'transparent';
-            e.target.style.boxShadow = 'none';
-          }}
-        >
-          [ CALENDAR VIEW ]
-        </button>
-
-        <button 
-          style={{...styles.button, ...styles.deleteAllButton}}
+          style={{...styles.button, borderColor: '#ff4444'}}
           onClick={() => setShowDeleteAll(!showDeleteAll)}
-          onMouseEnter={(e) => {
-            e.target.style.backgroundColor = 'rgba(255, 68, 68, 0.1)';
-            e.target.style.boxShadow = '0 0 20px rgba(255, 68, 68, 0.3)';
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.backgroundColor = 'transparent';
-            e.target.style.boxShadow = 'none';
-          }}
         >
           {showDeleteAll ? '[ CANCEL ]' : '[ PURGE ALL ]'}
         </button>
@@ -444,7 +538,7 @@ function App() {
           </p>
           <div style={{display: 'flex', justifyContent: 'center', gap: '10px'}}>
             <button 
-              style={{...styles.button, ...styles.deleteAllButton}}
+              style={{...styles.button, borderColor: '#ff4444'}}
               onClick={deleteAllGoals}
             >
               [ CONFIRM PURGE ]
