@@ -51,6 +51,7 @@ function App() {
         dailyHistory: goal.dailyHistory || [],
         checkedToday: goal.checkedToday || false,
         duration: goal.duration || 0,
+        durationType: goal.durationType || 'days', // 'days' o 'period'
         name: goal.name || 'Obiettivo senza nome',
         startDate: goal.startDate || new Date().toISOString(),
         frequency: goal.frequency || 'daily',
@@ -319,17 +320,25 @@ function App() {
       borderRadius: '4px',
       marginTop: '5px',
       zIndex: 1000,
-      minWidth: '160px',
+      minWidth: '200px',
       boxShadow: '0 4px 6px rgba(0, 0, 0, 0.5)',
+      overflow: 'hidden',
     },
     dropdownItem: {
-      padding: '10px 15px',
+      padding: '12px 20px',
       cursor: 'pointer',
       transition: 'all 0.3s',
       color: '#00ff00',
       fontSize: '11px',
       letterSpacing: '1px',
       borderBottom: '1px solid rgba(0, 255, 0, 0.1)',
+      whiteSpace: 'nowrap',
+      display: 'block',
+      width: '100%',
+      textAlign: 'left',
+      backgroundColor: 'transparent',
+      fontFamily: "'Courier New', monospace",
+      textTransform: 'uppercase',
     },
     errorMessage: {
       backgroundColor: 'rgba(255, 0, 0, 0.1)',
@@ -514,7 +523,7 @@ function App() {
           </button>
           {showViewMenu && (
             <div style={styles.dropdownMenu}>
-              <div 
+              <button 
                 style={styles.dropdownItem}
                 onClick={() => {
                   setViewMode('progress');
@@ -524,8 +533,8 @@ function App() {
                 onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
               >
                 [ PROGRESS VIEW ]
-              </div>
-              <div 
+              </button>
+              <button 
                 style={styles.dropdownItem}
                 onClick={() => {
                   setViewMode('calendar');
@@ -535,7 +544,7 @@ function App() {
                 onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
               >
                 [ CALENDAR VIEW ]
-              </div>
+              </button>
             </div>
           )}
         </div>

@@ -52,6 +52,7 @@ export default async function handler(req, res) {
               // Aggiungi i campi di default se non esistono
               goal.frequency = goal.frequency || 'daily';
               goal.frequencyDays = goal.frequencyDays || [];
+              goal.durationType = goal.durationType || 'days';
               goals.push(goal);
             } catch (e) {
               console.error('Parse error:', e);
@@ -66,9 +67,9 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-      const { name, duration, frequency, frequencyDays } = req.body;
+      const { name, duration, frequency, frequencyDays, durationType } = req.body;
       
-      console.log('Creazione goal:', { name, duration, frequency, frequencyDays });
+      console.log('Creazione goal:', { name, duration, frequency, frequencyDays, durationType });
       
       if (!name || !duration) {
         return res.status(400).json({ error: 'Dati mancanti' });
@@ -79,6 +80,7 @@ export default async function handler(req, res) {
         id: goalId,
         name,
         duration: parseInt(duration),
+        durationType: durationType || 'days',
         startDate: new Date().toISOString(),
         dailyHistory: [],
         checkedToday: false,

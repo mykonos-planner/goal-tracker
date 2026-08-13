@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 function GoalForm({ onAddGoal }) {
   const [name, setName] = useState('');
   const [duration, setDuration] = useState('30');
+  const [durationType, setDurationType] = useState('days'); // 'days' o 'period'
   const [frequency, setFrequency] = useState('daily');
   const [selectedDays, setSelectedDays] = useState([]);
 
@@ -22,6 +23,7 @@ function GoalForm({ onAddGoal }) {
       const goalData = {
         name: name.trim(),
         duration: parseInt(duration),
+        durationType: durationType,
         frequency: frequency,
         frequencyDays: frequency === 'weekly' ? selectedDays : [],
       };
@@ -29,6 +31,7 @@ function GoalForm({ onAddGoal }) {
       onAddGoal(goalData);
       setName('');
       setDuration('30');
+      setDurationType('days');
       setFrequency('daily');
       setSelectedDays([]);
     }
@@ -130,6 +133,25 @@ function GoalForm({ onAddGoal }) {
       color: '#00ff00',
       fontFamily: "'Courier New', monospace",
     },
+    radioGroup: {
+      display: 'flex',
+      gap: '15px',
+      marginBottom: '15px',
+      flexWrap: 'wrap',
+    },
+    radioLabel: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '5px',
+      cursor: 'pointer',
+      color: '#00ff00',
+      fontSize: '12px',
+      letterSpacing: '1px',
+    },
+    radio: {
+      accentColor: '#00ff00',
+      cursor: 'pointer',
+    },
   };
 
   return (
@@ -148,7 +170,33 @@ function GoalForm({ onAddGoal }) {
         required
       />
       
-      <label style={styles.label}>Duration (days):</label>
+      <label style={styles.label}>Duration type:</label>
+      <div style={styles.radioGroup}>
+        <label style={styles.radioLabel}>
+          <input
+            type="radio"
+            value="days"
+            checked={durationType === 'days'}
+            onChange={(e) => setDurationType(e.target.value)}
+            style={styles.radio}
+          />
+          Total days (e.g., 30 total days)
+        </label>
+        <label style={styles.radioLabel}>
+          <input
+            type="radio"
+            value="period"
+            checked={durationType === 'period'}
+            onChange={(e) => setDurationType(e.target.value)}
+            style={styles.radio}
+          />
+          Period (e.g., within 30 days)
+        </label>
+      </div>
+      
+      <label style={styles.label}>
+        {durationType === 'days' ? 'Number of total days:' : 'Duration period (days):'}
+      </label>
       <input
         type="number"
         value={duration}
