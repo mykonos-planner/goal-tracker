@@ -9,53 +9,48 @@ function App() {
   const [showDailyCheck, setShowDailyCheck] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [lastUpdate, setLastUpdate] = useState(Date.now());
 
   // Carica gli obiettivi dal database all'avvio
   useEffect(() => {
     fetchGoals();
-    
-    // Aggiorna automaticamente ogni 30 secondi
-    const interval = setInterval(() => {
-      fetchGoals();
-    }, 30000);
-    
-    return () => clearInterval(interval);
   }, []);
 
   const fetchGoals = async () => {
-  try {
-    const response = await fetch('/api/goals');
-    if (!response.ok) throw new Error('Failed to fetch goals');
-    const data = await response.json();
-    
-    // Assicurati che data sia un array
-    const goalsArray = Array.isArray(data) ? data : [];
-    
-    // Normalizza i dati per assicurarti che abbiano le proprietà necessarie
-    const normalizedGoals = goalsArray.map(goal => ({
-      ...goal,
-      id: goal.id || goal._id || `goal_${Date.now()}`,
-      dailyHistory: goal.dailyHistory || [],
-      checkedToday: goal.checkedToday || false,
-      duration: goal.duration || 0,
-      name: goal.name || 'Obiettivo senza nome',
-      startDate: goal.startDate || new Date().toISOString(),
-    }));
-    
-    setGoals(normalizedGoals);
-    setError(null);
-  } catch (err) {
-    console.error('Error fetching goals:', err);
-    setError('Errore nel caricamento degli obiettivi dal database');
-  } finally {
-    setLoading(false);
-  }
-};
+    try {
+      const response = await fetch('/api/goals');
+      if (!response.ok) throw new Error('Failed to fetch goals');
+      const data = await response.json();
+      
+      // Assicurati che data sia un array
+      const goalsArray = Array.isArray(data) ? data : [];
+      
+      // Normalizza i dati per assicurarti che abbiano le proprietà necessarie
+      const normalizedGoals = goalsArray.map(goal => ({
+        ...goal,
+        id: goal.id || goal._id || `goal_${Date.now()}`,
+        dailyHistory: goal.dailyHistory || [],
+        checkedToday: goal.checkedToday || false,
+        duration: goal.duration || 0,
+        name: goal.name || 'Obiettivo senza nome',
+        startDate: goal.startDate || new Date().toISOString(),
+      }));
+      
+      setGoals(normalizedGoals);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching goals:', err);
+      setError('Errore nel caricamento degli obiettivi dal database');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const addGoal = async (newGoal) => {
     try {
       setLoading(true);
+      
+      console.log('Aggiunta nuovo goal:', newGoal);
+      
       const response = await fetch('/api/goals', {
         method: 'POST',
         headers: {
@@ -65,25 +60,27 @@ function App() {
       });
       
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Errore risposta:', errorData);
         throw new Error(errorData.error || 'Failed to add goal');
       }
       
       const createdGoal = await response.json();
+      console.log('Goal creato:', createdGoal);
       
       // Aggiorna lo stato locale
       setGoals(prevGoals => [createdGoal, ...prevGoals]);
       setShowAddGoal(false);
       setError(null);
       
-      // Ricarica gli obiettivi dal server per sincronizzare
+      // Ricarica gli obiettivi dal server
       await fetchGoals();
       
       return true;
     } catch (err) {
       console.error('Error adding goal:', err);
       setError('Errore nell\'aggiunta dell\'obiettivo');
-      alert('Errore nell\'aggiunta dell\'obiettivo. Riprova.');
+      alert('Errore nell\'aggiunta dell\'obiettivo: ' + err.message);
       return false;
     } finally {
       setLoading(false);
@@ -92,27 +89,49 @@ function App() {
 
   const deleteGoal = async (goalId) => {
     try {
-      const response = await fetch(`/api/goals/${goalId}`, {
+      console.log('Tentativo eliminazione goal:', goalId);
+      
+      // Usa encodeURIComponent per gestire caratteri speciali nell'ID
+      const encodedId = encodeURIComponent(goalId);
+      console.log('URL eliminazione:', `/api/goals/${encodedId}`);
+      
+      const response = await fetch(`/api/goals/${encodedId}`, {
         method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
       
-      if (!response.ok) throw new Error('Failed to delete goal');
+      console.log('Risposta eliminazione:', response.status);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Errore eliminazione:', errorData);
+        throw new Error(errorData.error || 'Failed to delete goal');
+      }
       
       // Aggiorna lo stato locale
-      setGoals(prevGoals => prevGoals.filter(goal => goal.id !== goalId));
+      setGoals(prevGoals => prevGoals.filter(goal => {
+        const goalIdToCheck = goal.id || goal._id;
+        return goalIdToCheck !== goalId;
+      }));
+      
       setError(null);
       
-      // Ricarica dal server
+      // Ricarica dal server per sincronizzare
       await fetchGoals();
+      
     } catch (err) {
       console.error('Error deleting goal:', err);
       setError('Errore nell\'eliminazione dell\'obiettivo');
-      alert('Errore nell\'eliminazione dell\'obiettivo');
+      alert('Errore nell\'eliminazione dell\'obiettivo: ' + err.message);
     }
   };
 
   const toggleTodayCheck = async (goalId, checked) => {
     try {
+      console.log('Toggle check:', { goalId, checked });
+      
       const response = await fetch('/api/daily-check', {
         method: 'POST',
         headers: {
@@ -121,21 +140,30 @@ function App() {
         body: JSON.stringify({ goalId, checked }),
       });
       
-      if (!response.ok) throw new Error('Failed to update check');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to update check');
+      }
       
       const updatedGoal = await response.json();
+      console.log('Goal aggiornato:', updatedGoal);
       
       // Aggiorna lo stato locale
       setGoals(prevGoals => 
-        prevGoals.map(goal => 
-          goal.id === goalId ? updatedGoal : goal
-        )
+        prevGoals.map(goal => {
+          const goalIdToCheck = goal.id || goal._id;
+          return goalIdToCheck === goalId ? updatedGoal : goal;
+        })
       );
       setError(null);
+      
+      // Ricarica dal server
+      await fetchGoals();
+      
     } catch (err) {
       console.error('Error updating check:', err);
       setError('Errore nell\'aggiornamento del check');
-      alert('Errore nell\'aggiornamento del check');
+      alert('Errore nell\'aggiornamento del check: ' + err.message);
     }
   };
 
@@ -318,7 +346,6 @@ function App() {
 
       <div style={styles.syncStatus}>
         <p>💾 Dati sincronizzati con il database cloud</p>
-        <p>Ultimo aggiornamento: {new Date(lastUpdate).toLocaleTimeString()}</p>
       </div>
     </div>
   );

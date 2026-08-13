@@ -136,14 +136,15 @@ function ProgressBars({ goals, onDeleteGoal }) {
         const daysRemaining = getDaysRemaining(goal);
         const dailyHistory = goal.dailyHistory || [];
         const duration = goal.duration || 0;
+        const goalId = goal.id || goal._id;
         
         return (
-          <div key={goal.id || Math.random()} style={styles.goalCard}>
+          <div key={goalId || Math.random()} style={styles.goalCard}>
             <div style={styles.goalHeader}>
               <div style={styles.goalName}>{goal.name || 'Obiettivo senza nome'}</div>
               <button 
                 style={styles.deleteButton}
-                onClick={() => onDeleteGoal(goal.id || goal._id)}
+                onClick={() => onDeleteGoal(goalId)}
                 onMouseEnter={(e) => e.target.style.backgroundColor = '#cc0000'}
                 onMouseLeave={(e) => e.target.style.backgroundColor = '#ff4444'}
               >
