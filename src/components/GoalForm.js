@@ -8,7 +8,7 @@ function GoalForm({ onAddGoal }) {
   const [frequency, setFrequency] = useState('daily');
   const [selectedDays, setSelectedDays] = useState([]);
   const [color, setColor] = useState('#00ff00');
-  const [startDateType, setStartDateType] = useState('today'); // 'today', 'tomorrow', 'custom'
+  const [startDateType, setStartDateType] = useState('today');
   const [customStartDate, setCustomStartDate] = useState('');
 
   const weekDays = [
@@ -22,14 +22,14 @@ function GoalForm({ onAddGoal }) {
   ];
 
   const colorOptions = [
-    '#00ff00', // Green
-    '#00ccff', // Blue
-    '#ff00ff', // Magenta
-    '#ff9900', // Orange
-    '#ff4444', // Red
-    '#ffff00', // Yellow
-    '#ff69b4', // Pink
-    '#9b59b6', // Purple
+    '#00ff00',
+    '#00ccff',
+    '#ff00ff',
+    '#ff9900',
+    '#ff4444',
+    '#ffff00',
+    '#ff69b4',
+    '#9b59b6',
   ];
 
   const handleSubmit = (e) => {
@@ -40,17 +40,23 @@ function GoalForm({ onAddGoal }) {
       switch (startDateType) {
         case 'today':
           startDate = new Date();
+          startDate.setHours(0, 0, 0, 0);
           break;
         case 'tomorrow':
           startDate = new Date();
           startDate.setDate(startDate.getDate() + 1);
+          startDate.setHours(0, 0, 0, 0);
           break;
         case 'custom':
           startDate = new Date(customStartDate);
+          startDate.setHours(0, 0, 0, 0);
           break;
         default:
           startDate = new Date();
+          startDate.setHours(0, 0, 0, 0);
       }
+      
+      console.log('Data inizio selezionata:', startDate);
       
       const goalData = {
         name: name.trim(),
@@ -62,6 +68,8 @@ function GoalForm({ onAddGoal }) {
         color: color,
         startDate: startDate.toISOString(),
       };
+      
+      console.log('Dati obiettivo da salvare:', goalData);
       
       onAddGoal(goalData);
       setName('');

@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 function TodayView({ goals, onToggleCheck }) {
+  const [expandedGoal, setExpandedGoal] = useState(null);
+  
   const today = new Date();
-  today.setHours(0, 0, 0, 0); // Imposta a mezzanotte per confronto corretto
+  today.setHours(0, 0, 0, 0);
   const todayString = today.toDateString();
   
   const todayFormatted = today.toLocaleDateString('it-IT', {
@@ -14,22 +16,29 @@ function TodayView({ goals, onToggleCheck }) {
 
   const shouldDoGoalToday = (goal) => {
     if (!goal.startDate) {
+      console.log('Goal senza startDate:', goal.name);
       return false;
     }
     
     const goalStartDate = new Date(goal.startDate);
-    goalStartDate.setHours(0, 0, 0, 0); // Imposta a mezzanotte per confronto corretto
+    goalStartDate.setHours(0, 0, 0, 0);
+    
+    console.log('Goal:', goal.name, 'Start:', goalStartDate, 'Today:', today);
     
     // Se l'obiettivo inizia dopo oggi, non mostrarlo
     if (goalStartDate > today) {
+      console.log('Goal futuro, non mostrare');
       return false;
     }
     
     // Calcola i giorni trascorsi dall'inizio
     const daysSinceStart = Math.floor((today - goalStartDate) / (1000 * 60 * 60 * 24));
     
+    console.log('Days since start:', daysSinceStart, 'Duration:', goal.duration);
+    
     // Se l'obiettivo è già finito, non mostrarlo
     if (daysSinceStart >= goal.duration) {
+      console.log('Goal finito, non mostrare');
       return false;
     }
     
@@ -50,6 +59,10 @@ function TodayView({ goals, onToggleCheck }) {
   const isCompletedToday = (goal) => {
     return goal.checkedToday === true || 
            (Array.isArray(goal.dailyHistory) && goal.dailyHistory.includes(todayString));
+  };
+
+  const toggleExpand = (goalId) => {
+    setExpandedGoal(expandedGoal === goalId ? null : goalId);
   };
 
   const todaysGoals = goals.filter(goal => shouldDoGoalToday(goal));
@@ -83,6 +96,19 @@ function TodayView({ goals, onToggleCheck }) {
       flexWrap: 'wrap',
       gap: '10px',
     },
+    goalItemExpanded: {
+      display: 'flex',
+      alignItems: 'center',
+      padding: '15px',
+      marginBottom: '10px',
+      borderRadius: '4px',
+      cursor: 'pointer',
+      transition: 'all 0.3s',
+      border: '1px solid #00ff00',
+      flexWrap: 'wrap',
+      gap: '10px',
+      boxShadow: '0 0 15px rgba(0, 255, 0, 0.1)',
+    },
     colorDot: {
       width: '10px',
       height: '10px',
@@ -112,7 +138,11 @@ function TodayView({ goals, onToggleCheck }) {
       width: '100%',
       opacity: '0.8',
       letterSpacing: '0.5px',
-      marginTop: '5px',
+      marginTop: '10px',
+      padding: '10px',
+      backgroundColor: 'rgba(0, 255, 0, 0.03)',
+      borderRadius: '4px',
+      border: '1px solid rgba(0, 255, 0, 0.1)',
     },
     goalInfo: {
       fontSize: '11px',
@@ -120,6 +150,11 @@ function TodayView({ goals, onToggleCheck }) {
       marginLeft: 'auto',
       letterSpacing: '1px',
       whiteSpace: 'nowrap',
+    },
+    expandIndicator: {
+      color: '#00ff00',
+      fontSize: '10px',
+      marginLeft: '5px',
     },
     emptyMessage: {
       textAlign: 'center',
@@ -177,7 +212,6 @@ function TodayView({ goals, onToggleCheck }) {
     },
   };
 
-  // Separa gli obiettivi di oggi da quelli futuri
   const futureGoals = goals.filter(goal => {
     if (!goal.startDate) return false;
     const goalStartDate = new Date(goal.startDate);
@@ -216,15 +250,16 @@ function TodayView({ goals, onToggleCheck }) {
         const goalId = goal.id || goal._id;
         const completed = isCompletedToday(goal);
         const goalColor = goal.color || '#00ff00';
+        const isExpanded = expandedGoal === goalId;
         
         return (
           <div
             key={goalId}
             style={{
-              ...styles.goalItem,
+              ...(isExpanded ? styles.goalItemExpanded : styles.goalItem),
               ...(completed ? styles.completedToday : styles.notCompletedToday)
             }}
-            onClick={() => onToggleCheck(goalId, !completed)}
+            onClick={() => toggleExpand(goalId)}
           >
             <span 
               style={{
@@ -243,16 +278,20 @@ function TodayView({ goals, onToggleCheck }) {
             <div style={{flex: 1}}>
               <span style={styles.goalName}>
                 {goal.name || 'UNTITLED'}
+                <span style={styles.expandIndicator}>
+                  {isExpanded ? ' [-]' : ' [+]'}
+                </span>
               </span>
-              {goal.description && (
-                <div style={styles.goalDescription}>
-                  {goal.description}
-                </div>
-              )}
             </div>
             <span style={styles.goalInfo}>
               {completed ? '[✓ DONE]' : '[PENDING]'}
             </span>
+            
+            {isExpanded && goal.description && (
+              <div style={styles.goalDescription}>
+                {goal.description}
+              </div>
+            )}
           </div>
         );
       })}
