@@ -21,7 +21,10 @@ function CalendarView({ goals }) {
   };
 
   const getFirstDayOfMonth = (date) => {
-    return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+    // Modifica: 0 = Domenica, 1 = Lunedì, ..., 6 = Sabato
+    // Convertiamo per far iniziare da Lunedì
+    const day = new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+    return day === 0 ? 6 : day - 1;
   };
 
   const shouldDoGoalOnDate = (goal, date) => {
@@ -299,7 +302,7 @@ function CalendarView({ goals }) {
       </div>
 
       <div style={styles.weekDays}>
-        {['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map(day => (
+        {['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'].map(day => (
           <div key={day} style={styles.weekDay}>{day}</div>
         ))}
       </div>
@@ -328,7 +331,6 @@ function CalendarView({ goals }) {
                   const goalColor = goal.color || '#00ff00';
                   
                   if (isMobile) {
-                    // Mobile: mostra pallini colorati
                     return (
                       <span
                         key={goalId}
@@ -342,7 +344,6 @@ function CalendarView({ goals }) {
                       />
                     );
                   } else {
-                    // Desktop: mostra badge con nome completo
                     return (
                       <span
                         key={goalId}
