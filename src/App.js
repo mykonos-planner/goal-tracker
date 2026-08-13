@@ -3,6 +3,7 @@ import GoalForm from './components/GoalForm';
 import DailyCheck from './components/DailyCheck';
 import ProgressBars from './components/ProgressBars';
 import CalendarView from './components/CalendarView';
+import TodayView from './components/TodayView';
 
 function App() {
   const [goals, setGoals] = useState([]);
@@ -51,11 +52,13 @@ function App() {
         dailyHistory: goal.dailyHistory || [],
         checkedToday: goal.checkedToday || false,
         duration: goal.duration || 0,
-        durationType: goal.durationType || 'days', // 'days' o 'period'
+        durationType: goal.durationType || 'days',
         name: goal.name || 'Obiettivo senza nome',
+        description: goal.description || '',
         startDate: goal.startDate || new Date().toISOString(),
         frequency: goal.frequency || 'daily',
         frequencyDays: goal.frequencyDays || [],
+        color: goal.color || '#00ff00',
       }));
       
       setGoals(normalizedGoals);
@@ -519,10 +522,25 @@ function App() {
             style={{...styles.button, borderColor: '#ff9900'}}
             onClick={() => setShowViewMenu(!showViewMenu)}
           >
-            [VIEW: {viewMode === 'progress' ? 'PROG' : 'CAL'} ▼]
+            [VIEW: {
+              viewMode === 'progress' ? 'PROG' : 
+              viewMode === 'calendar' ? 'CAL' : 
+              'TODAY'
+            } ▼]
           </button>
           {showViewMenu && (
             <div style={styles.dropdownMenu}>
+              <button 
+                style={styles.dropdownItem}
+                onClick={() => {
+                  setViewMode('today');
+                  setShowViewMenu(false);
+                }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(255, 153, 0, 0.1)'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+              >
+                [ TODAY VIEW ]
+              </button>
               <button 
                 style={styles.dropdownItem}
                 onClick={() => {
@@ -593,8 +611,13 @@ function App() {
           goals={goals} 
           onDeleteGoal={deleteGoal}
         />
-      ) : (
+      ) : viewMode === 'calendar' ? (
         <CalendarView goals={goals} />
+      ) : (
+        <TodayView 
+          goals={goals} 
+          onToggleCheck={toggleTodayCheck}
+        />
       )}
 
       <div style={styles.syncStatus}>

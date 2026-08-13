@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 
 function GoalForm({ onAddGoal }) {
   const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
   const [duration, setDuration] = useState('30');
-  const [durationType, setDurationType] = useState('days'); // 'days' o 'period'
+  const [durationType, setDurationType] = useState('days');
   const [frequency, setFrequency] = useState('daily');
   const [selectedDays, setSelectedDays] = useState([]);
+  const [color, setColor] = useState('#00ff00');
 
   const weekDays = [
     { value: 0, label: 'MON' },
@@ -17,23 +19,38 @@ function GoalForm({ onAddGoal }) {
     { value: 6, label: 'SUN' },
   ];
 
+  const colorOptions = [
+    '#00ff00', // Green
+    '#00ccff', // Blue
+    '#ff00ff', // Magenta
+    '#ff9900', // Orange
+    '#ff4444', // Red
+    '#ffff00', // Yellow
+    '#ff69b4', // Pink
+    '#9b59b6', // Purple
+  ];
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (name.trim() && duration > 0) {
       const goalData = {
         name: name.trim(),
+        description: description.trim(),
         duration: parseInt(duration),
         durationType: durationType,
         frequency: frequency,
         frequencyDays: frequency === 'weekly' ? selectedDays : [],
+        color: color,
       };
       
       onAddGoal(goalData);
       setName('');
+      setDescription('');
       setDuration('30');
       setDurationType('days');
       setFrequency('daily');
       setSelectedDays([]);
+      setColor('#00ff00');
     }
   };
 
@@ -66,6 +83,20 @@ function GoalForm({ onAddGoal }) {
       backgroundColor: 'transparent',
       color: '#00ff00',
       fontFamily: "'Courier New', monospace",
+    },
+    textarea: {
+      width: '100%',
+      padding: '10px',
+      marginBottom: '15px',
+      border: '1px solid #00ff00',
+      borderRadius: '4px',
+      fontSize: '14px',
+      outline: 'none',
+      backgroundColor: 'transparent',
+      color: '#00ff00',
+      fontFamily: "'Courier New', monospace",
+      minHeight: '60px',
+      resize: 'vertical',
     },
     select: {
       width: '100%',
@@ -152,6 +183,29 @@ function GoalForm({ onAddGoal }) {
       accentColor: '#00ff00',
       cursor: 'pointer',
     },
+    colorContainer: {
+      display: 'flex',
+      flexWrap: 'wrap',
+      gap: '8px',
+      marginBottom: '15px',
+    },
+    colorButton: {
+      width: '30px',
+      height: '30px',
+      borderRadius: '50%',
+      cursor: 'pointer',
+      border: '2px solid transparent',
+      transition: 'all 0.3s',
+    },
+    colorButtonSelected: {
+      width: '30px',
+      height: '30px',
+      borderRadius: '50%',
+      cursor: 'pointer',
+      border: '2px solid #ffffff',
+      transition: 'all 0.3s',
+      boxShadow: '0 0 10px rgba(255, 255, 255, 0.5)',
+    },
   };
 
   return (
@@ -170,6 +224,29 @@ function GoalForm({ onAddGoal }) {
         required
       />
       
+      <label style={styles.label}>Description:</label>
+      <textarea
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+        placeholder="Enter description (optional)..."
+        style={styles.textarea}
+      />
+      
+      <label style={styles.label}>Color:</label>
+      <div style={styles.colorContainer}>
+        {colorOptions.map(colorOption => (
+          <button
+            key={colorOption}
+            type="button"
+            onClick={() => setColor(colorOption)}
+            style={{
+              ...(color === colorOption ? styles.colorButtonSelected : styles.colorButton),
+              backgroundColor: colorOption,
+            }}
+          />
+        ))}
+      </div>
+      
       <label style={styles.label}>Duration type:</label>
       <div style={styles.radioGroup}>
         <label style={styles.radioLabel}>
@@ -180,7 +257,7 @@ function GoalForm({ onAddGoal }) {
             onChange={(e) => setDurationType(e.target.value)}
             style={styles.radio}
           />
-          Total days (e.g., 30 total days)
+          Total days
         </label>
         <label style={styles.radioLabel}>
           <input
@@ -190,7 +267,7 @@ function GoalForm({ onAddGoal }) {
             onChange={(e) => setDurationType(e.target.value)}
             style={styles.radio}
           />
-          Period (e.g., within 30 days)
+          Period
         </label>
       </div>
       
