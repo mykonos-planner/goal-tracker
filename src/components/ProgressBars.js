@@ -85,10 +85,11 @@ function ProgressBars({ goals, onDeleteGoal }) {
       marginBottom: '8px',
       opacity: '0.8',
       letterSpacing: '0.5px',
-      padding: '10px',
+      padding: '8px',
       backgroundColor: 'rgba(0, 255, 0, 0.03)',
       borderRadius: '4px',
       border: '1px solid rgba(0, 255, 0, 0.1)',
+      width: '100%',
     },
     colorDot: {
       width: '12px',
@@ -141,6 +142,7 @@ function ProgressBars({ goals, onDeleteGoal }) {
       flexWrap: 'wrap',
       gap: '10px',
       letterSpacing: '1px',
+      marginTop: '5px',
     },
     expandedContent: {
       marginTop: '10px',
@@ -256,7 +258,7 @@ function ProgressBars({ goals, onDeleteGoal }) {
               </button>
             </div>
 
-            {isExpanded && goal.description && (
+            {goal.description && (
               <div style={styles.goalDescription}>
                 {goal.description}
               </div>

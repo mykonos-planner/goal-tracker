@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 
 function TodayView({ goals, onToggleCheck }) {
-  const [expandedGoal, setExpandedGoal] = useState(null);
-  
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const todayString = today.toDateString();
@@ -16,33 +14,23 @@ function TodayView({ goals, onToggleCheck }) {
 
   const shouldDoGoalToday = (goal) => {
     if (!goal.startDate) {
-      console.log('Goal senza startDate:', goal.name);
       return false;
     }
     
     const goalStartDate = new Date(goal.startDate);
     goalStartDate.setHours(0, 0, 0, 0);
     
-    console.log('Goal:', goal.name, 'Start:', goalStartDate, 'Today:', today);
-    
     // Se l'obiettivo inizia dopo oggi, non mostrarlo
     if (goalStartDate > today) {
-      console.log('Goal futuro, non mostrare');
       return false;
     }
     
-    // Calcola i giorni trascorsi dall'inizio
     const daysSinceStart = Math.floor((today - goalStartDate) / (1000 * 60 * 60 * 24));
     
-    console.log('Days since start:', daysSinceStart, 'Duration:', goal.duration);
-    
-    // Se l'obiettivo è già finito, non mostrarlo
     if (daysSinceStart >= goal.duration) {
-      console.log('Goal finito, non mostrare');
       return false;
     }
     
-    // Controlla la frequenza
     switch (goal.frequency) {
       case 'daily':
         return true;
@@ -59,10 +47,6 @@ function TodayView({ goals, onToggleCheck }) {
   const isCompletedToday = (goal) => {
     return goal.checkedToday === true || 
            (Array.isArray(goal.dailyHistory) && goal.dailyHistory.includes(todayString));
-  };
-
-  const toggleExpand = (goalId) => {
-    setExpandedGoal(expandedGoal === goalId ? null : goalId);
   };
 
   const todaysGoals = goals.filter(goal => shouldDoGoalToday(goal));
@@ -86,7 +70,7 @@ function TodayView({ goals, onToggleCheck }) {
     },
     goalItem: {
       display: 'flex',
-      alignItems: 'center',
+      alignItems: 'flex-start',
       padding: '15px',
       marginBottom: '10px',
       borderRadius: '4px',
@@ -95,19 +79,6 @@ function TodayView({ goals, onToggleCheck }) {
       border: '1px solid rgba(0, 255, 0, 0.2)',
       flexWrap: 'wrap',
       gap: '10px',
-    },
-    goalItemExpanded: {
-      display: 'flex',
-      alignItems: 'center',
-      padding: '15px',
-      marginBottom: '10px',
-      borderRadius: '4px',
-      cursor: 'pointer',
-      transition: 'all 0.3s',
-      border: '1px solid #00ff00',
-      flexWrap: 'wrap',
-      gap: '10px',
-      boxShadow: '0 0 15px rgba(0, 255, 0, 0.1)',
     },
     colorDot: {
       width: '10px',
@@ -124,37 +95,37 @@ function TodayView({ goals, onToggleCheck }) {
       marginRight: '15px',
       cursor: 'pointer',
       accentColor: '#00ff00',
+      flexShrink: 0,
+      marginTop: '2px',
+    },
+    goalContent: {
+      flex: 1,
+      minWidth: '200px',
     },
     goalName: {
       fontSize: '14px',
       color: '#00ff00',
-      flex: 1,
-      minWidth: '150px',
       letterSpacing: '0.5px',
+      marginBottom: '5px',
     },
     goalDescription: {
       fontSize: '11px',
       color: '#00cc00',
-      width: '100%',
       opacity: '0.8',
       letterSpacing: '0.5px',
-      marginTop: '10px',
-      padding: '10px',
+      marginTop: '5px',
+      padding: '8px',
       backgroundColor: 'rgba(0, 255, 0, 0.03)',
       borderRadius: '4px',
       border: '1px solid rgba(0, 255, 0, 0.1)',
+      width: '100%',
     },
     goalInfo: {
       fontSize: '11px',
       color: '#00cc00',
-      marginLeft: 'auto',
       letterSpacing: '1px',
       whiteSpace: 'nowrap',
-    },
-    expandIndicator: {
-      color: '#00ff00',
-      fontSize: '10px',
-      marginLeft: '5px',
+      flexShrink: 0,
     },
     emptyMessage: {
       textAlign: 'center',
@@ -197,27 +168,7 @@ function TodayView({ goals, onToggleCheck }) {
       transition: 'width 0.5s ease-in-out',
       borderRadius: '2px',
     },
-    futureGoalsMessage: {
-      marginTop: '20px',
-      padding: '10px',
-      backgroundColor: 'rgba(0, 204, 255, 0.05)',
-      borderRadius: '4px',
-      border: '1px solid rgba(0, 204, 255, 0.2)',
-      textAlign: 'center',
-    },
-    futureGoalsText: {
-      color: '#00ccff',
-      fontSize: '11px',
-      letterSpacing: '1px',
-    },
   };
-
-  const futureGoals = goals.filter(goal => {
-    if (!goal.startDate) return false;
-    const goalStartDate = new Date(goal.startDate);
-    goalStartDate.setHours(0, 0, 0, 0);
-    return goalStartDate > today;
-  });
 
   if (todaysGoals.length === 0) {
     return (
@@ -228,14 +179,6 @@ function TodayView({ goals, onToggleCheck }) {
         <p style={styles.emptyMessage}>
           [ NO TASKS SCHEDULED FOR TODAY ]
         </p>
-        
-        {futureGoals.length > 0 && (
-          <div style={styles.futureGoalsMessage}>
-            <p style={styles.futureGoalsText}>
-              [ {futureGoals.length} TASKS SCHEDULED FOR FUTURE DATES ]
-            </p>
-          </div>
-        )}
       </div>
     );
   }
@@ -250,16 +193,15 @@ function TodayView({ goals, onToggleCheck }) {
         const goalId = goal.id || goal._id;
         const completed = isCompletedToday(goal);
         const goalColor = goal.color || '#00ff00';
-        const isExpanded = expandedGoal === goalId;
         
         return (
           <div
             key={goalId}
             style={{
-              ...(isExpanded ? styles.goalItemExpanded : styles.goalItem),
+              ...styles.goalItem,
               ...(completed ? styles.completedToday : styles.notCompletedToday)
             }}
-            onClick={() => toggleExpand(goalId)}
+            onClick={() => onToggleCheck(goalId, !completed)}
           >
             <span 
               style={{
@@ -275,23 +217,19 @@ function TodayView({ goals, onToggleCheck }) {
               style={styles.checkbox}
               onClick={(e) => e.stopPropagation()}
             />
-            <div style={{flex: 1}}>
+            <div style={styles.goalContent}>
               <span style={styles.goalName}>
                 {goal.name || 'UNTITLED'}
-                <span style={styles.expandIndicator}>
-                  {isExpanded ? ' [-]' : ' [+]'}
-                </span>
               </span>
+              {goal.description && (
+                <div style={styles.goalDescription}>
+                  {goal.description}
+                </div>
+              )}
             </div>
             <span style={styles.goalInfo}>
               {completed ? '[✓ DONE]' : '[PENDING]'}
             </span>
-            
-            {isExpanded && goal.description && (
-              <div style={styles.goalDescription}>
-                {goal.description}
-              </div>
-            )}
           </div>
         );
       })}
@@ -307,14 +245,6 @@ function TodayView({ goals, onToggleCheck }) {
           }} />
         </div>
       </div>
-      
-      {futureGoals.length > 0 && (
-        <div style={styles.futureGoalsMessage}>
-          <p style={styles.futureGoalsText}>
-            [ {futureGoals.length} TASKS SCHEDULED FOR FUTURE DATES ]
-          </p>
-        </div>
-      )}
     </div>
   );
 }

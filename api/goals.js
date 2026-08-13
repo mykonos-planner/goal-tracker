@@ -39,7 +39,6 @@ export default async function handler(req, res) {
       }
 
       const data = await response.json();
-      console.log('Risposta Upstash:', data);
       
       const result = data.result || data;
       const goals = [];
@@ -49,10 +48,11 @@ export default async function handler(req, res) {
           if (result[i + 1]) {
             try {
               const goal = JSON.parse(result[i + 1]);
-              // Aggiungi i campi di default se non esistono
               goal.frequency = goal.frequency || 'daily';
               goal.frequencyDays = goal.frequencyDays || [];
               goal.durationType = goal.durationType || 'days';
+              goal.description = goal.description || '';
+              goal.color = goal.color || '#00ff00';
               goals.push(goal);
             } catch (e) {
               console.error('Parse error:', e);
@@ -62,32 +62,37 @@ export default async function handler(req, res) {
       }
 
       goals.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-      console.log('Goals recuperati:', goals.length);
       return res.status(200).json(goals);
     }
 
     if (req.method === 'POST') {
-      const { name, duration, frequency, frequencyDays, durationType } = req.body;
+      const { name, duration, frequency, frequencyDays, durationType, description, color, startDate } = req.body;
       
-      console.log('Creazione goal:', { name, duration, frequency, frequencyDays, durationType });
+      console.log('Creazione goal con dati:', { name, duration, frequency, frequencyDays, durationType, description, color, startDate });
       
       if (!name || !duration) {
         return res.status(400).json({ error: 'Dati mancanti' });
       }
 
       const goalId = Date.now().toString();
+      
+      // IMPORTANTE: Usa la startDate fornita dal client, NON sovrascriverla
       const newGoal = {
         id: goalId,
         name,
         duration: parseInt(duration),
         durationType: durationType || 'days',
-        startDate: new Date().toISOString(),
+        startDate: startDate || new Date().toISOString(), // Usa la data fornita
         dailyHistory: [],
         checkedToday: false,
         createdAt: new Date().toISOString(),
         frequency: frequency || 'daily',
         frequencyDays: frequencyDays || [],
+        description: description || '', // Salva la descrizione
+        color: color || '#00ff00',
       };
+
+      console.log('Nuovo goal completo:', newGoal);
 
       const saveResponse = await fetch(url, {
         method: 'POST',
