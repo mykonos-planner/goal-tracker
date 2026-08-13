@@ -47,6 +47,9 @@ function ProgressBars({ goals, onDeleteGoal }) {
       display: 'grid',
       gap: '8px',
       fontFamily: "'Courier New', monospace",
+      width: '100%',
+      boxSizing: 'border-box',
+      overflowX: 'hidden',
     },
     goalCard: {
       backgroundColor: 'rgba(0, 255, 0, 0.02)',
@@ -55,6 +58,9 @@ function ProgressBars({ goals, onDeleteGoal }) {
       border: '1px solid rgba(0, 255, 0, 0.3)',
       cursor: 'pointer',
       transition: 'all 0.3s',
+      width: '100%',
+      boxSizing: 'border-box',
+      overflow: 'hidden',
     },
     goalCardExpanded: {
       backgroundColor: 'rgba(0, 255, 0, 0.04)',
@@ -64,12 +70,19 @@ function ProgressBars({ goals, onDeleteGoal }) {
       cursor: 'pointer',
       transition: 'all 0.3s',
       boxShadow: '0 0 15px rgba(0, 255, 0, 0.1)',
+      width: '100%',
+      boxSizing: 'border-box',
+      overflow: 'hidden',
     },
     goalHeader: {
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'center',
       marginBottom: '8px',
+      gap: '8px',
+      width: '100%',
+      boxSizing: 'border-box',
+      flexWrap: 'wrap',
     },
     goalName: {
       fontSize: '14px',
@@ -78,6 +91,8 @@ function ProgressBars({ goals, onDeleteGoal }) {
       letterSpacing: '1px',
       flex: 1,
       marginRight: '10px',
+      minWidth: 0,
+      wordBreak: 'break-word',
     },
     goalDescription: {
       fontSize: '11px',
@@ -90,6 +105,8 @@ function ProgressBars({ goals, onDeleteGoal }) {
       borderRadius: '4px',
       border: '1px solid rgba(0, 255, 0, 0.1)',
       width: '100%',
+      boxSizing: 'border-box',
+      wordBreak: 'break-word',
     },
     colorDot: {
       width: '12px',
@@ -99,6 +116,7 @@ function ProgressBars({ goals, onDeleteGoal }) {
       marginRight: '8px',
       verticalAlign: 'middle',
       border: '1px solid rgba(255, 255, 255, 0.3)',
+      flexShrink: 0,
     },
     deleteButton: {
       backgroundColor: 'transparent',
@@ -111,6 +129,7 @@ function ProgressBars({ goals, onDeleteGoal }) {
       letterSpacing: '1px',
       fontFamily: "'Courier New', monospace",
       transition: 'all 0.3s',
+      flexShrink: 0,
     },
     progressBarContainer: {
       width: '100%',
@@ -120,6 +139,7 @@ function ProgressBars({ goals, onDeleteGoal }) {
       overflow: 'hidden',
       position: 'relative',
       border: '1px solid rgba(0, 255, 0, 0.3)',
+      boxSizing: 'border-box',
     },
     progressBar: {
       height: '100%',
@@ -133,6 +153,7 @@ function ProgressBars({ goals, onDeleteGoal }) {
       fontSize: '10px',
       letterSpacing: '1px',
       minWidth: '0px',
+      maxWidth: '100%',
     },
     info: {
       display: 'flex',
@@ -143,6 +164,9 @@ function ProgressBars({ goals, onDeleteGoal }) {
       gap: '10px',
       letterSpacing: '1px',
       marginTop: '5px',
+      width: '100%',
+      boxSizing: 'border-box',
+      wordBreak: 'break-word',
     },
     expandedContent: {
       marginTop: '10px',
@@ -150,6 +174,9 @@ function ProgressBars({ goals, onDeleteGoal }) {
       backgroundColor: 'rgba(0, 255, 0, 0.03)',
       borderRadius: '4px',
       border: '1px solid rgba(0, 255, 0, 0.2)',
+      width: '100%',
+      boxSizing: 'border-box',
+      overflow: 'hidden',
     },
     historyContainer: {
       marginTop: '10px',
@@ -157,6 +184,9 @@ function ProgressBars({ goals, onDeleteGoal }) {
       backgroundColor: 'rgba(0, 255, 0, 0.03)',
       borderRadius: '4px',
       border: '1px solid rgba(0, 255, 0, 0.2)',
+      width: '100%',
+      boxSizing: 'border-box',
+      overflow: 'hidden',
     },
     historyTitle: {
       fontSize: '11px',
@@ -169,6 +199,8 @@ function ProgressBars({ goals, onDeleteGoal }) {
       display: 'flex',
       flexWrap: 'wrap',
       gap: '4px',
+      width: '100%',
+      boxSizing: 'border-box',
     },
     dayBox: {
       width: '16px',
@@ -176,6 +208,7 @@ function ProgressBars({ goals, onDeleteGoal }) {
       borderRadius: '2px',
       border: '1px solid #00ff00',
       transition: 'all 0.3s',
+      flexShrink: 0,
     },
     emptyMessage: {
       textAlign: 'center',
@@ -185,6 +218,8 @@ function ProgressBars({ goals, onDeleteGoal }) {
       borderRadius: '4px',
       border: '1px solid #00ff00',
       letterSpacing: '2px',
+      width: '100%',
+      boxSizing: 'border-box',
     },
     expandIndicator: {
       color: '#00ff00',
@@ -224,7 +259,7 @@ function ProgressBars({ goals, onDeleteGoal }) {
             onClick={() => toggleExpand(goalId)}
           >
             <div style={styles.goalHeader}>
-              <div style={{display: 'flex', alignItems: 'center', flex: 1}}>
+              <div style={{display: 'flex', alignItems: 'center', flex: 1, minWidth: 0}}>
                 <span 
                   style={{
                     ...styles.colorDot,
@@ -257,6 +292,12 @@ function ProgressBars({ goals, onDeleteGoal }) {
                 [DEL]
               </button>
             </div>
+
+            {isExpanded && goal.description && (
+              <div style={styles.goalDescription}>
+                {goal.description}
+              </div>
+            )}
             
             <div style={styles.progressBarContainer}>
               <div style={{
@@ -277,12 +318,6 @@ function ProgressBars({ goals, onDeleteGoal }) {
 
             {isExpanded && (
               <div style={styles.expandedContent}>
-                {goal.description && (
-                  <div style={styles.goalDescription}>
-                    {goal.description}
-                  </div>
-                )}
-                
                 <div style={styles.info}>
                   <span>START: {formatDate(goal.startDate)}</span>
                   <span>FREQ: {getFrequencyLabel(goal)}</span>
