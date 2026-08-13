@@ -3,6 +3,18 @@ import React, { useState } from 'react';
 function CalendarView({ goals }) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  React.useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const getDaysInMonth = (date) => {
     return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
@@ -62,7 +74,7 @@ function CalendarView({ goals }) {
     container: {
       backgroundColor: 'rgba(0, 255, 0, 0.02)',
       borderRadius: '4px',
-      padding: '15px',
+      padding: isMobile ? '10px' : '15px',
       border: '1px solid rgba(0, 255, 0, 0.3)',
       fontFamily: "'Courier New', monospace",
       width: '100%',
@@ -77,7 +89,7 @@ function CalendarView({ goals }) {
       gap: '10px',
     },
     monthTitle: {
-      fontSize: '1em',
+      fontSize: isMobile ? '0.9em' : '1em',
       color: '#00ff00',
       letterSpacing: '1px',
       fontWeight: 'normal',
@@ -85,7 +97,7 @@ function CalendarView({ goals }) {
       flex: 1,
     },
     navButton: {
-      padding: '6px 10px',
+      padding: isMobile ? '8px 12px' : '6px 10px',
       backgroundColor: 'transparent',
       color: '#00ff00',
       border: '1px solid #00ff00',
@@ -95,32 +107,35 @@ function CalendarView({ goals }) {
       transition: 'all 0.3s',
       fontFamily: "'Courier New', monospace",
       flexShrink: 0,
+      minWidth: '40px',
+      minHeight: '40px',
     },
     weekDays: {
       display: 'grid',
       gridTemplateColumns: 'repeat(7, 1fr)',
-      gap: '2px',
-      marginBottom: '5px',
+      gap: isMobile ? '4px' : '2px',
+      marginBottom: isMobile ? '8px' : '5px',
     },
     weekDay: {
       textAlign: 'center',
       color: '#00cc00',
-      padding: '5px',
+      padding: isMobile ? '8px 0' : '5px',
       backgroundColor: 'rgba(0, 255, 0, 0.05)',
-      borderRadius: '2px',
-      fontSize: '8px',
+      borderRadius: '4px',
+      fontSize: isMobile ? '9px' : '8px',
       letterSpacing: '0.5px',
+      fontWeight: 'bold',
     },
     daysGrid: {
       display: 'grid',
       gridTemplateColumns: 'repeat(7, 1fr)',
-      gap: '2px',
+      gap: isMobile ? '4px' : '2px',
     },
     dayCell: {
-      minHeight: '70px',
-      padding: '4px',
+      minHeight: isMobile ? '50px' : '70px',
+      padding: isMobile ? '6px' : '4px',
       backgroundColor: 'rgba(0, 255, 0, 0.02)',
-      borderRadius: '2px',
+      borderRadius: '4px',
       cursor: 'pointer',
       transition: 'all 0.3s',
       position: 'relative',
@@ -128,10 +143,10 @@ function CalendarView({ goals }) {
       overflow: 'hidden',
     },
     dayCellToday: {
-      minHeight: '70px',
-      padding: '4px',
+      minHeight: isMobile ? '50px' : '70px',
+      padding: isMobile ? '6px' : '4px',
       backgroundColor: 'rgba(0, 255, 0, 0.05)',
-      borderRadius: '2px',
+      borderRadius: '4px',
       cursor: 'pointer',
       transition: 'all 0.3s',
       position: 'relative',
@@ -139,10 +154,10 @@ function CalendarView({ goals }) {
       overflow: 'hidden',
     },
     dayCellSelected: {
-      minHeight: '70px',
-      padding: '4px',
+      minHeight: isMobile ? '50px' : '70px',
+      padding: isMobile ? '6px' : '4px',
       backgroundColor: 'rgba(0, 255, 0, 0.1)',
-      borderRadius: '2px',
+      borderRadius: '4px',
       cursor: 'pointer',
       transition: 'all 0.3s',
       position: 'relative',
@@ -152,41 +167,27 @@ function CalendarView({ goals }) {
     },
     dayNumber: {
       color: '#00ff00',
-      marginBottom: '3px',
-      fontSize: '10px',
+      marginBottom: isMobile ? '3px' : '3px',
+      fontSize: isMobile ? '11px' : '10px',
       fontWeight: 'bold',
+      textAlign: 'center',
     },
     goalsContainer: {
       display: 'flex',
       flexDirection: 'column',
-      gap: '1px',
+      gap: isMobile ? '2px' : '1px',
+      alignItems: 'center',
     },
-    goalBadge: {
-      padding: '1px 3px',
-      borderRadius: '2px',
-      fontSize: '7px',
-      whiteSpace: 'nowrap',
-      overflow: 'hidden',
-      textOverflow: 'ellipsis',
-      maxWidth: '100%',
-      letterSpacing: '0.3px',
-      color: '#ffffff',
-    },
-    goalBadgeCompleted: {
-      padding: '1px 3px',
-      borderRadius: '2px',
-      fontSize: '7px',
-      whiteSpace: 'nowrap',
-      overflow: 'hidden',
-      textOverflow: 'ellipsis',
-      maxWidth: '100%',
-      letterSpacing: '0.3px',
-      color: '#ffffff',
-      textDecoration: 'line-through',
+    goalDot: {
+      width: isMobile ? '8px' : '6px',
+      height: isMobile ? '8px' : '6px',
+      borderRadius: '50%',
+      transition: 'all 0.3s',
+      flexShrink: 0,
     },
     detailsPanel: {
       marginTop: '15px',
-      padding: '10px',
+      padding: isMobile ? '12px' : '10px',
       backgroundColor: 'rgba(0, 255, 0, 0.03)',
       borderRadius: '4px',
       border: '1px solid rgba(0, 255, 0, 0.2)',
@@ -194,11 +195,11 @@ function CalendarView({ goals }) {
     detailsTitle: {
       color: '#00ff00',
       marginBottom: '10px',
-      fontSize: '12px',
+      fontSize: isMobile ? '11px' : '12px',
       letterSpacing: '1px',
     },
     goalItem: {
-      padding: '8px',
+      padding: isMobile ? '10px' : '8px',
       marginBottom: '5px',
       backgroundColor: 'rgba(0, 255, 0, 0.03)',
       borderRadius: '4px',
@@ -207,22 +208,23 @@ function CalendarView({ goals }) {
       alignItems: 'center',
       border: '1px solid rgba(0, 255, 0, 0.1)',
       gap: '10px',
+      minHeight: isMobile ? '40px' : 'auto',
     },
     completedIcon: {
       color: '#00ff00',
       fontWeight: 'bold',
-      fontSize: '10px',
+      fontSize: isMobile ? '9px' : '10px',
       flexShrink: 0,
     },
     pendingIcon: {
       color: '#ff9900',
       fontWeight: 'bold',
-      fontSize: '10px',
+      fontSize: isMobile ? '9px' : '10px',
       flexShrink: 0,
     },
     colorDot: {
-      width: '8px',
-      height: '8px',
+      width: isMobile ? '10px' : '8px',
+      height: isMobile ? '10px' : '8px',
       borderRadius: '50%',
       display: 'inline-block',
       marginRight: '5px',
@@ -250,8 +252,6 @@ function CalendarView({ goals }) {
         <button 
           style={styles.navButton} 
           onClick={() => changeMonth(-1)}
-          onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(0, 255, 0, 0.1)'}
-          onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
         >
           ←
         </button>
@@ -261,8 +261,6 @@ function CalendarView({ goals }) {
         <button 
           style={styles.navButton} 
           onClick={() => changeMonth(1)}
-          onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(0, 255, 0, 0.1)'}
-          onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
         >
           →
         </button>
@@ -292,7 +290,7 @@ function CalendarView({ goals }) {
             >
               <div style={styles.dayNumber}>{date.getDate()}</div>
               <div style={styles.goalsContainer}>
-                {goalsForDate.slice(0, 4).map(goal => {
+                {goalsForDate.slice(0, isMobile ? 3 : 4).map(goal => {
                   const goalId = goal.id || goal._id;
                   const completed = isDateCompleted(date, goalId);
                   const goalColor = goal.color || '#00ff00';
@@ -301,14 +299,13 @@ function CalendarView({ goals }) {
                     <span
                       key={goalId}
                       style={{
-                        ...(completed ? styles.goalBadgeCompleted : styles.goalBadge),
+                        ...styles.goalDot,
                         backgroundColor: completed ? goalColor : `${goalColor}66`,
                         border: `1px solid ${goalColor}`,
+                        boxShadow: completed ? `0 0 4px ${goalColor}` : 'none',
                       }}
                       title={`${goal.name} - ${completed ? 'COMPLETED' : 'PENDING'}`}
-                    >
-                      {completed ? '✓ ' : '• '}{goal.name.substring(0, 10)}
-                    </span>
+                    />
                   );
                 })}
               </div>
@@ -336,7 +333,7 @@ function CalendarView({ goals }) {
               
               return (
                 <div key={goalId} style={styles.goalItem}>
-                  <span style={{color: '#00ff00', fontSize: '11px', flex: 1, display: 'flex', alignItems: 'center'}}>
+                  <span style={{color: '#00ff00', fontSize: isMobile ? '11px' : '11px', flex: 1, display: 'flex', alignItems: 'center'}}>
                     <span style={{
                       ...styles.colorDot,
                       backgroundColor: goalColor,

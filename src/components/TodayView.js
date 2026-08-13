@@ -22,7 +22,6 @@ function TodayView({ goals, onToggleCheck }) {
     const goalStartDate = new Date(goal.startDate);
     goalStartDate.setHours(0, 0, 0, 0);
     
-    // Se l'obiettivo inizia dopo oggi, non mostrarlo
     if (goalStartDate > today) {
       return false;
     }
@@ -61,101 +60,107 @@ function TodayView({ goals, onToggleCheck }) {
   const styles = {
     container: {
       backgroundColor: 'rgba(0, 255, 0, 0.02)',
-      padding: '20px',
+      padding: '15px',
       borderRadius: '4px',
       border: '1px solid rgba(0, 255, 0, 0.3)',
       fontFamily: "'Courier New', monospace",
+      width: '100%',
+      boxSizing: 'border-box',
     },
     header: {
       color: '#00ff00',
-      marginBottom: '20px',
-      fontSize: '1.1em',
+      marginBottom: '15px',
+      fontSize: '1em',
       letterSpacing: '1px',
       borderBottom: '1px solid rgba(0, 255, 0, 0.3)',
-      paddingBottom: '15px',
+      paddingBottom: '10px',
     },
     goalItem: {
       display: 'flex',
-      alignItems: 'flex-start',
-      padding: '15px',
-      marginBottom: '10px',
+      alignItems: 'center',
+      padding: '12px',
+      marginBottom: '8px',
       borderRadius: '4px',
       cursor: 'pointer',
       transition: 'all 0.3s',
       border: '1px solid rgba(0, 255, 0, 0.2)',
-      flexWrap: 'wrap',
-      gap: '10px',
+      gap: '8px',
+      width: '100%',
+      boxSizing: 'border-box',
     },
     goalItemExpanded: {
       display: 'flex',
-      alignItems: 'flex-start',
-      padding: '15px',
-      marginBottom: '10px',
+      alignItems: 'center',
+      padding: '12px',
+      marginBottom: '8px',
       borderRadius: '4px',
       cursor: 'pointer',
       transition: 'all 0.3s',
       border: '1px solid #00ff00',
+      gap: '8px',
+      boxShadow: '0 0 10px rgba(0, 255, 0, 0.1)',
+      width: '100%',
+      boxSizing: 'border-box',
       flexWrap: 'wrap',
-      gap: '10px',
-      boxShadow: '0 0 15px rgba(0, 255, 0, 0.1)',
     },
     colorDot: {
       width: '10px',
       height: '10px',
       borderRadius: '50%',
       display: 'inline-block',
-      marginRight: '10px',
-      verticalAlign: 'middle',
+      flexShrink: 0,
       border: '1px solid rgba(255, 255, 255, 0.3)',
     },
     checkbox: {
-      width: '20px',
-      height: '20px',
-      marginRight: '15px',
+      width: '18px',
+      height: '18px',
       cursor: 'pointer',
       accentColor: '#00ff00',
       flexShrink: 0,
-      marginTop: '2px',
     },
     goalContent: {
       flex: 1,
-      minWidth: '200px',
+      minWidth: 0,
+      display: 'flex',
+      flexDirection: 'column',
     },
     goalName: {
-      fontSize: '14px',
+      fontSize: '13px',
       color: '#00ff00',
       letterSpacing: '0.5px',
-      marginBottom: '5px',
+      marginBottom: '3px',
+      wordBreak: 'break-word',
     },
     goalDescription: {
-      fontSize: '11px',
+      fontSize: '10px',
       color: '#00cc00',
       opacity: '0.8',
       letterSpacing: '0.5px',
-      marginTop: '10px',
+      marginTop: '5px',
       padding: '8px',
       backgroundColor: 'rgba(0, 255, 0, 0.03)',
       borderRadius: '4px',
       border: '1px solid rgba(0, 255, 0, 0.1)',
       width: '100%',
+      boxSizing: 'border-box',
     },
     goalInfo: {
-      fontSize: '11px',
+      fontSize: '10px',
       color: '#00cc00',
-      letterSpacing: '1px',
+      letterSpacing: '0.5px',
       whiteSpace: 'nowrap',
       flexShrink: 0,
     },
     expandIndicator: {
       color: '#00ff00',
-      fontSize: '10px',
-      marginLeft: '5px',
+      fontSize: '9px',
+      marginLeft: '3px',
     },
     emptyMessage: {
       textAlign: 'center',
       color: '#00cc00',
       padding: '20px',
-      fontSize: '14px',
+      fontSize: '13px',
       letterSpacing: '1px',
     },
     completedToday: {
@@ -166,8 +171,8 @@ function TodayView({ goals, onToggleCheck }) {
       backgroundColor: 'rgba(0, 255, 0, 0.02)',
     },
     progressSummary: {
-      marginTop: '20px',
-      padding: '15px',
+      marginTop: '15px',
+      padding: '12px',
       backgroundColor: 'rgba(0, 255, 0, 0.05)',
       borderRadius: '4px',
       border: '1px solid rgba(0, 255, 0, 0.2)',
@@ -175,13 +180,13 @@ function TodayView({ goals, onToggleCheck }) {
     },
     progressText: {
       color: '#00ff00',
-      fontSize: '14px',
+      fontSize: '12px',
       letterSpacing: '1px',
-      marginBottom: '10px',
+      marginBottom: '8px',
     },
     progressBar: {
       width: '100%',
-      height: '10px',
+      height: '8px',
       backgroundColor: 'rgba(0, 255, 0, 0.1)',
       borderRadius: '2px',
       overflow: 'hidden',
@@ -220,51 +225,60 @@ function TodayView({ goals, onToggleCheck }) {
         const isExpanded = expandedGoal === goalId;
         
         return (
-          <div
-            key={goalId}
-            style={{
-              ...(isExpanded ? styles.goalItemExpanded : styles.goalItem),
-              ...(completed ? styles.completedToday : styles.notCompletedToday)
-            }}
-            onClick={() => toggleExpand(goalId)}
-          >
-            <span 
+          <div key={goalId}>
+            <div
               style={{
-                ...styles.colorDot,
-                backgroundColor: goalColor,
-                boxShadow: `0 0 5px ${goalColor}`,
+                ...(isExpanded ? styles.goalItemExpanded : styles.goalItem),
+                ...(completed ? styles.completedToday : styles.notCompletedToday)
               }}
-            />
-            <input
-              type="checkbox"
-              checked={completed}
-              onChange={() => onToggleCheck(goalId, !completed)}
-              style={styles.checkbox}
-              onClick={(e) => e.stopPropagation()}
-            />
-            <div style={styles.goalContent}>
-              <span style={styles.goalName}>
-                {goal.name || 'UNTITLED'}
-                <span style={styles.expandIndicator}>
-                  {isExpanded ? ' [-]' : ' [+]'}
+              onClick={() => toggleExpand(goalId)}
+            >
+              <span 
+                style={{
+                  ...styles.colorDot,
+                  backgroundColor: goalColor,
+                  boxShadow: `0 0 3px ${goalColor}`,
+                }}
+              />
+              <input
+                type="checkbox"
+                checked={completed}
+                onChange={() => onToggleCheck(goalId, !completed)}
+                style={styles.checkbox}
+                onClick={(e) => e.stopPropagation()}
+              />
+              <div style={styles.goalContent}>
+                <span style={styles.goalName}>
+                  {goal.name || 'UNTITLED'}
+                  <span style={styles.expandIndicator}>
+                    {isExpanded ? ' [-]' : ' [+]'}
+                  </span>
                 </span>
+              </div>
+              <span style={styles.goalInfo}>
+                {completed ? '[✓]' : '[ ]'}
               </span>
-              {isExpanded && goal.description && (
-                <div style={styles.goalDescription}>
-                  {goal.description}
-                </div>
-              )}
             </div>
-            <span style={styles.goalInfo}>
-              {completed ? '[✓ DONE]' : '[PENDING]'}
-            </span>
+            
+            {isExpanded && goal.description && (
+              <div style={{
+                ...styles.goalDescription,
+                marginTop: '-4px',
+                marginBottom: '8px',
+                marginLeft: '35px',
+                width: 'calc(100% - 35px)',
+                boxSizing: 'border-box',
+              }}>
+                {goal.description}
+              </div>
+            )}
           </div>
         );
       })}
 
       <div style={styles.progressSummary}>
         <div style={styles.progressText}>
-          [ PROGRESS: {completedCount}/{todaysGoals.length} COMPLETED ]
+          [ {completedCount}/{todaysGoals.length} COMPLETED ]
         </div>
         <div style={styles.progressBar}>
           <div style={{
