@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import GoalForm from './components/GoalForm';
-import DailyCheck from './components/DailyCheck';
 import ProgressBars from './components/ProgressBars';
 import CalendarView from './components/CalendarView';
 import TodayView from './components/TodayView';
@@ -9,8 +8,7 @@ function App() {
   const [goals, setGoals] = useState([]);
   const [currentSection, setCurrentSection] = useState('home');
   const [showAddGoal, setShowAddGoal] = useState(false);
-  const [showDailyCheck, setShowDailyCheck] = useState(false);
-  const [viewMode, setViewMode] = useState('progress');
+  const [viewMode, setViewMode] = useState('today');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showDeleteAll, setShowDeleteAll] = useState(false);
@@ -464,7 +462,6 @@ function App() {
         onClick={() => {
           setCurrentSection('home');
           setShowAddGoal(false);
-          setShowDailyCheck(false);
         }}
       >
         [ ← BACK ]
@@ -495,27 +492,12 @@ function App() {
       )}
 
       <div style={styles.toolbar}>
-        <div style={styles.buttonGroup}>
-          <button 
-            style={{...styles.button, borderColor: '#00ff00'}}
-            onClick={() => {
-              setShowAddGoal(!showAddGoal);
-              setShowDailyCheck(false);
-            }}
-          >
-            {showAddGoal ? '[CLOSE]' : '[NEW TASK]'}
-          </button>
-          
-          <button 
-            style={{...styles.button, borderColor: '#00ccff'}}
-            onClick={() => {
-              setShowDailyCheck(!showDailyCheck);
-              setShowAddGoal(false);
-            }}
-          >
-            {showDailyCheck ? '[CLOSE]' : '[DAILY CHECK]'}
-          </button>
-        </div>
+        <button 
+          style={{...styles.button, borderColor: '#00ff00'}}
+          onClick={() => setShowAddGoal(!showAddGoal)}
+        >
+          {showAddGoal ? '[CLOSE]' : '[NEW TASK]'}
+        </button>
 
         <div style={styles.dropdownContainer}>
           <button 
@@ -599,12 +581,6 @@ function App() {
       )}
 
       {showAddGoal && <GoalForm onAddGoal={addGoal} />}
-      {showDailyCheck && (
-        <DailyCheck 
-          goals={goals} 
-          onToggleCheck={toggleTodayCheck} 
-        />
-      )}
       
       {viewMode === 'progress' ? (
         <ProgressBars 

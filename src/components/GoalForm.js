@@ -8,6 +8,8 @@ function GoalForm({ onAddGoal }) {
   const [frequency, setFrequency] = useState('daily');
   const [selectedDays, setSelectedDays] = useState([]);
   const [color, setColor] = useState('#00ff00');
+  const [startDateType, setStartDateType] = useState('today'); // 'today', 'tomorrow', 'custom'
+  const [customStartDate, setCustomStartDate] = useState('');
 
   const weekDays = [
     { value: 0, label: 'MON' },
@@ -33,6 +35,23 @@ function GoalForm({ onAddGoal }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (name.trim() && duration > 0) {
+      let startDate;
+      
+      switch (startDateType) {
+        case 'today':
+          startDate = new Date();
+          break;
+        case 'tomorrow':
+          startDate = new Date();
+          startDate.setDate(startDate.getDate() + 1);
+          break;
+        case 'custom':
+          startDate = new Date(customStartDate);
+          break;
+        default:
+          startDate = new Date();
+      }
+      
       const goalData = {
         name: name.trim(),
         description: description.trim(),
@@ -41,6 +60,7 @@ function GoalForm({ onAddGoal }) {
         frequency: frequency,
         frequencyDays: frequency === 'weekly' ? selectedDays : [],
         color: color,
+        startDate: startDate.toISOString(),
       };
       
       onAddGoal(goalData);
@@ -51,6 +71,8 @@ function GoalForm({ onAddGoal }) {
       setFrequency('daily');
       setSelectedDays([]);
       setColor('#00ff00');
+      setStartDateType('today');
+      setCustomStartDate('');
     }
   };
 
@@ -246,6 +268,53 @@ function GoalForm({ onAddGoal }) {
           />
         ))}
       </div>
+      
+      <label style={styles.label}>Start date:</label>
+      <div style={styles.radioGroup}>
+        <label style={styles.radioLabel}>
+          <input
+            type="radio"
+            value="today"
+            checked={startDateType === 'today'}
+            onChange={(e) => setStartDateType(e.target.value)}
+            style={styles.radio}
+          />
+          Today
+        </label>
+        <label style={styles.radioLabel}>
+          <input
+            type="radio"
+            value="tomorrow"
+            checked={startDateType === 'tomorrow'}
+            onChange={(e) => setStartDateType(e.target.value)}
+            style={styles.radio}
+          />
+          Tomorrow
+        </label>
+        <label style={styles.radioLabel}>
+          <input
+            type="radio"
+            value="custom"
+            checked={startDateType === 'custom'}
+            onChange={(e) => setStartDateType(e.target.value)}
+            style={styles.radio}
+          />
+          Custom date
+        </label>
+      </div>
+      
+      {startDateType === 'custom' && (
+        <>
+          <label style={styles.label}>Select date:</label>
+          <input
+            type="date"
+            value={customStartDate}
+            onChange={(e) => setCustomStartDate(e.target.value)}
+            style={styles.input}
+            required
+          />
+        </>
+      )}
       
       <label style={styles.label}>Duration type:</label>
       <div style={styles.radioGroup}>
