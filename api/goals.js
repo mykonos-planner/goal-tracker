@@ -19,7 +19,6 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
       console.log('Recupero obiettivi...');
       
-      // Usa il formato POST con comando Redis
       const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -49,7 +48,11 @@ export default async function handler(req, res) {
         for (let i = 0; i < result.length; i += 2) {
           if (result[i + 1]) {
             try {
-              goals.push(JSON.parse(result[i + 1]));
+              const goal = JSON.parse(result[i + 1]);
+              // Aggiungi i campi di default se non esistono
+              goal.frequency = goal.frequency || 'daily';
+              goal.frequencyDays = goal.frequencyDays || [];
+              goals.push(goal);
             } catch (e) {
               console.error('Parse error:', e);
             }
@@ -63,9 +66,9 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-      const { name, duration } = req.body;
+      const { name, duration, frequency, frequencyDays } = req.body;
       
-      console.log('Creazione goal:', { name, duration });
+      console.log('Creazione goal:', { name, duration, frequency, frequencyDays });
       
       if (!name || !duration) {
         return res.status(400).json({ error: 'Dati mancanti' });
@@ -79,10 +82,11 @@ export default async function handler(req, res) {
         startDate: new Date().toISOString(),
         dailyHistory: [],
         checkedToday: false,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        frequency: frequency || 'daily',
+        frequencyDays: frequencyDays || [],
       };
 
-      // Salva su Upstash usando HSET
       const saveResponse = await fetch(url, {
         method: 'POST',
         headers: {

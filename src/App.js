@@ -2,15 +2,17 @@ import React, { useState, useEffect } from 'react';
 import GoalForm from './components/GoalForm';
 import DailyCheck from './components/DailyCheck';
 import ProgressBars from './components/ProgressBars';
+import CalendarView from './components/CalendarView';
 
 function App() {
   const [goals, setGoals] = useState([]);
   const [showAddGoal, setShowAddGoal] = useState(false);
   const [showDailyCheck, setShowDailyCheck] = useState(false);
+  const [viewMode, setViewMode] = useState('progress'); // 'progress' o 'calendar'
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showDeleteAll, setShowDeleteAll] = useState(false);
 
-  // Carica gli obiettivi dal database all'avvio
   useEffect(() => {
     fetchGoals();
   }, []);
@@ -21,10 +23,8 @@ function App() {
       if (!response.ok) throw new Error('Failed to fetch goals');
       const data = await response.json();
       
-      // Assicurati che data sia un array
       const goalsArray = Array.isArray(data) ? data : [];
       
-      // Normalizza i dati per assicurarti che abbiano le proprietà necessarie
       const normalizedGoals = goalsArray.map(goal => ({
         ...goal,
         id: goal.id || goal._id || `goal_${Date.now()}`,
@@ -33,6 +33,8 @@ function App() {
         duration: goal.duration || 0,
         name: goal.name || 'Obiettivo senza nome',
         startDate: goal.startDate || new Date().toISOString(),
+        frequency: goal.frequency || 'daily',
+        frequencyDays: goal.frequencyDays || [],
       }));
       
       setGoals(normalizedGoals);
@@ -49,8 +51,6 @@ function App() {
     try {
       setLoading(true);
       
-      console.log('Aggiunta nuovo goal:', newGoal);
-      
       const response = await fetch('/api/goals', {
         method: 'POST',
         headers: {
@@ -61,19 +61,15 @@ function App() {
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        console.error('Errore risposta:', errorData);
         throw new Error(errorData.error || 'Failed to add goal');
       }
       
       const createdGoal = await response.json();
-      console.log('Goal creato:', createdGoal);
       
-      // Aggiorna lo stato locale
       setGoals(prevGoals => [createdGoal, ...prevGoals]);
       setShowAddGoal(false);
       setError(null);
       
-      // Ricarica gli obiettivi dal server
       await fetchGoals();
       
       return true;
@@ -88,51 +84,76 @@ function App() {
   };
 
   const deleteGoal = async (goalId) => {
-  try {
-    console.log('Tentativo eliminazione goal:', goalId);
-    
-    // Usa encodeURIComponent per gestire caratteri speciali nell'ID
-    const encodedId = encodeURIComponent(goalId);
-    
-    // Usa POST invece di DELETE per l'eliminazione
-    const response = await fetch(`/api/goals/${encodedId}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ action: 'delete' }),
-    });
-    
-    console.log('Risposta eliminazione:', response.status);
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error('Errore eliminazione:', errorData);
-      throw new Error(errorData.error || 'Failed to delete goal');
+    try {
+      const encodedId = encodeURIComponent(goalId);
+      
+      const response = await fetch(`/api/goals/${encodedId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action: 'delete' }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to delete goal');
+      }
+      
+      setGoals(prevGoals => prevGoals.filter(goal => {
+        const goalIdToCheck = goal.id || goal._id;
+        return goalIdToCheck !== goalId;
+      }));
+      
+      setError(null);
+      await fetchGoals();
+      
+    } catch (err) {
+      console.error('Error deleting goal:', err);
+      setError('Errore nell\'eliminazione dell\'obiettivo');
+      alert('Errore nell\'eliminazione dell\'obiettivo: ' + err.message);
+    }
+  };
+
+  const deleteAllGoals = async () => {
+    if (!window.confirm('Sei sicuro di voler eliminare TUTTI gli obiettivi? Questa azione non può essere annullata!')) {
+      return;
     }
     
-    // Aggiorna lo stato locale
-    setGoals(prevGoals => prevGoals.filter(goal => {
-      const goalIdToCheck = goal.id || goal._id;
-      return goalIdToCheck !== goalId;
-    }));
-    
-    setError(null);
-    
-    // Ricarica dal server per sincronizzare
-    await fetchGoals();
-    
-  } catch (err) {
-    console.error('Error deleting goal:', err);
-    setError('Errore nell\'eliminazione dell\'obiettivo');
-    alert('Errore nell\'eliminazione dell\'obiettivo: ' + err.message);
-  }
-};
+    try {
+      setLoading(true);
+      
+      const response = await fetch('/api/goals/delete-all', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to delete all goals');
+      }
+      
+      setGoals([]);
+      setError(null);
+      setShowDeleteAll(false);
+      
+      await fetchGoals();
+      
+      alert('Tutti gli obiettivi sono stati eliminati!');
+      
+    } catch (err) {
+      console.error('Error deleting all goals:', err);
+      setError('Errore nell\'eliminazione di tutti gli obiettivi');
+      alert('Errore nell\'eliminazione: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const toggleTodayCheck = async (goalId, checked) => {
     try {
-      console.log('Toggle check:', { goalId, checked });
-      
       const response = await fetch('/api/daily-check', {
         method: 'POST',
         headers: {
@@ -147,9 +168,7 @@ function App() {
       }
       
       const updatedGoal = await response.json();
-      console.log('Goal aggiornato:', updatedGoal);
       
-      // Aggiorna lo stato locale
       setGoals(prevGoals => 
         prevGoals.map(goal => {
           const goalIdToCheck = goal.id || goal._id;
@@ -158,7 +177,6 @@ function App() {
       );
       setError(null);
       
-      // Ricarica dal server
       await fetchGoals();
       
     } catch (err) {
@@ -170,7 +188,7 @@ function App() {
 
   const styles = {
     container: {
-      maxWidth: '800px',
+      maxWidth: '1000px',
       margin: '0 auto',
       padding: '20px',
     },
@@ -211,11 +229,17 @@ function App() {
       backgroundColor: '#2196F3',
       color: 'white',
     },
-    refreshButton: {
+    calendarButton: {
+      backgroundColor: '#9C27B0',
+      color: 'white',
+    },
+    progressButton: {
       backgroundColor: '#FF9800',
       color: 'white',
-      padding: '8px 16px',
-      fontSize: '14px',
+    },
+    deleteAllButton: {
+      backgroundColor: '#ff4444',
+      color: 'white',
     },
     errorMessage: {
       backgroundColor: '#ff4444',
@@ -237,6 +261,24 @@ function App() {
       fontSize: '12px',
       marginTop: '20px',
       opacity: '0.8',
+    },
+    dangerZone: {
+      backgroundColor: '#fff3f3',
+      padding: '20px',
+      borderRadius: '12px',
+      marginBottom: '30px',
+      border: '2px solid #ff4444',
+    },
+    dangerTitle: {
+      color: '#ff4444',
+      marginBottom: '15px',
+      textAlign: 'center',
+    },
+    viewToggle: {
+      display: 'flex',
+      justifyContent: 'center',
+      gap: '10px',
+      marginBottom: '30px',
     }
   };
 
@@ -288,14 +330,6 @@ function App() {
         <button 
           style={{...styles.button, ...styles.addButton}}
           onClick={() => setShowAddGoal(!showAddGoal)}
-          onMouseEnter={(e) => {
-            e.target.style.transform = 'scale(1.05)';
-            e.target.style.boxShadow = '0 5px 15px rgba(0,0,0,0.3)';
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.transform = 'scale(1)';
-            e.target.style.boxShadow = 'none';
-          }}
         >
           {showAddGoal ? '✕ Chiudi' : '➕ Nuovo Obiettivo'}
         </button>
@@ -303,34 +337,54 @@ function App() {
         <button 
           style={{...styles.button, ...styles.checkButton}}
           onClick={() => setShowDailyCheck(!showDailyCheck)}
-          onMouseEnter={(e) => {
-            e.target.style.transform = 'scale(1.05)';
-            e.target.style.boxShadow = '0 5px 15px rgba(0,0,0,0.3)';
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.transform = 'scale(1)';
-            e.target.style.boxShadow = 'none';
-          }}
         >
           {showDailyCheck ? '✕ Chiudi' : '✓ Check Giornaliero'}
         </button>
 
         <button 
-          style={{...styles.button, ...styles.refreshButton}}
-          onClick={() => fetchGoals()}
-          title="Aggiorna dal server"
-          onMouseEnter={(e) => {
-            e.target.style.transform = 'scale(1.05)';
-            e.target.style.boxShadow = '0 5px 15px rgba(0,0,0,0.3)';
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.transform = 'scale(1)';
-            e.target.style.boxShadow = 'none';
-          }}
+          style={{...styles.button, ...styles.progressButton}}
+          onClick={() => setViewMode('progress')}
         >
-          🔄 Aggiorna
+          📊 Vista Progressi
+        </button>
+
+        <button 
+          style={{...styles.button, ...styles.calendarButton}}
+          onClick={() => setViewMode('calendar')}
+        >
+          📅 Vista Calendario
+        </button>
+
+        <button 
+          style={{...styles.button, ...styles.deleteAllButton}}
+          onClick={() => setShowDeleteAll(!showDeleteAll)}
+        >
+          {showDeleteAll ? '✕ Annulla' : '🗑️ Elimina Tutto'}
         </button>
       </div>
+
+      {showDeleteAll && (
+        <div style={styles.dangerZone}>
+          <h3 style={styles.dangerTitle}>⚠️ ZONA PERICOLOSA</h3>
+          <p style={{textAlign: 'center', marginBottom: '20px', color: '#666'}}>
+            Stai per eliminare tutti gli obiettivi. Questa azione non può essere annullata!
+          </p>
+          <div style={{display: 'flex', justifyContent: 'center', gap: '10px'}}>
+            <button 
+              style={{...styles.button, ...styles.deleteAllButton}}
+              onClick={deleteAllGoals}
+            >
+              Conferma Eliminazione Totale
+            </button>
+            <button 
+              style={{...styles.button, backgroundColor: '#666', color: 'white'}}
+              onClick={() => setShowDeleteAll(false)}
+            >
+              Annulla
+            </button>
+          </div>
+        </div>
+      )}
 
       {showAddGoal && <GoalForm onAddGoal={addGoal} />}
       {showDailyCheck && (
@@ -340,13 +394,18 @@ function App() {
         />
       )}
       
-      <ProgressBars 
-        goals={goals} 
-        onDeleteGoal={deleteGoal}
-      />
+      {viewMode === 'progress' ? (
+        <ProgressBars 
+          goals={goals} 
+          onDeleteGoal={deleteGoal}
+        />
+      ) : (
+        <CalendarView goals={goals} />
+      )}
 
       <div style={styles.syncStatus}>
         <p>💾 Dati sincronizzati con il database cloud</p>
+        <p>Obiettivi totali: {goals.length}</p>
       </div>
     </div>
   );
