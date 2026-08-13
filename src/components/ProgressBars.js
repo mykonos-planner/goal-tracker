@@ -257,12 +257,6 @@ function ProgressBars({ goals, onDeleteGoal }) {
                 [DEL]
               </button>
             </div>
-
-            {goal.description && (
-              <div style={styles.goalDescription}>
-                {goal.description}
-              </div>
-            )}
             
             <div style={styles.progressBarContainer}>
               <div style={{
@@ -283,6 +277,12 @@ function ProgressBars({ goals, onDeleteGoal }) {
 
             {isExpanded && (
               <div style={styles.expandedContent}>
+                {goal.description && (
+                  <div style={styles.goalDescription}>
+                    {goal.description}
+                  </div>
+                )}
+                
                 <div style={styles.info}>
                   <span>START: {formatDate(goal.startDate)}</span>
                   <span>FREQ: {getFrequencyLabel(goal)}</span>

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 
 function TodayView({ goals, onToggleCheck }) {
+  const [expandedGoal, setExpandedGoal] = useState(null);
+  
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const todayString = today.toDateString();
@@ -49,6 +51,10 @@ function TodayView({ goals, onToggleCheck }) {
            (Array.isArray(goal.dailyHistory) && goal.dailyHistory.includes(todayString));
   };
 
+  const toggleExpand = (goalId) => {
+    setExpandedGoal(expandedGoal === goalId ? null : goalId);
+  };
+
   const todaysGoals = goals.filter(goal => shouldDoGoalToday(goal));
   const completedCount = todaysGoals.filter(goal => isCompletedToday(goal)).length;
 
@@ -79,6 +85,19 @@ function TodayView({ goals, onToggleCheck }) {
       border: '1px solid rgba(0, 255, 0, 0.2)',
       flexWrap: 'wrap',
       gap: '10px',
+    },
+    goalItemExpanded: {
+      display: 'flex',
+      alignItems: 'flex-start',
+      padding: '15px',
+      marginBottom: '10px',
+      borderRadius: '4px',
+      cursor: 'pointer',
+      transition: 'all 0.3s',
+      border: '1px solid #00ff00',
+      flexWrap: 'wrap',
+      gap: '10px',
+      boxShadow: '0 0 15px rgba(0, 255, 0, 0.1)',
     },
     colorDot: {
       width: '10px',
@@ -113,7 +132,7 @@ function TodayView({ goals, onToggleCheck }) {
       color: '#00cc00',
       opacity: '0.8',
       letterSpacing: '0.5px',
-      marginTop: '5px',
+      marginTop: '10px',
       padding: '8px',
       backgroundColor: 'rgba(0, 255, 0, 0.03)',
       borderRadius: '4px',
@@ -126,6 +145,11 @@ function TodayView({ goals, onToggleCheck }) {
       letterSpacing: '1px',
       whiteSpace: 'nowrap',
       flexShrink: 0,
+    },
+    expandIndicator: {
+      color: '#00ff00',
+      fontSize: '10px',
+      marginLeft: '5px',
     },
     emptyMessage: {
       textAlign: 'center',
@@ -193,15 +217,16 @@ function TodayView({ goals, onToggleCheck }) {
         const goalId = goal.id || goal._id;
         const completed = isCompletedToday(goal);
         const goalColor = goal.color || '#00ff00';
+        const isExpanded = expandedGoal === goalId;
         
         return (
           <div
             key={goalId}
             style={{
-              ...styles.goalItem,
+              ...(isExpanded ? styles.goalItemExpanded : styles.goalItem),
               ...(completed ? styles.completedToday : styles.notCompletedToday)
             }}
-            onClick={() => onToggleCheck(goalId, !completed)}
+            onClick={() => toggleExpand(goalId)}
           >
             <span 
               style={{
@@ -220,8 +245,11 @@ function TodayView({ goals, onToggleCheck }) {
             <div style={styles.goalContent}>
               <span style={styles.goalName}>
                 {goal.name || 'UNTITLED'}
+                <span style={styles.expandIndicator}>
+                  {isExpanded ? ' [-]' : ' [+]'}
+                </span>
               </span>
-              {goal.description && (
+              {isExpanded && goal.description && (
                 <div style={styles.goalDescription}>
                   {goal.description}
                 </div>
