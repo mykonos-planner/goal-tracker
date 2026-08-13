@@ -219,7 +219,7 @@ function App() {
     },
     header: {
       textAlign: 'center',
-      marginBottom: '15px',
+      marginBottom: isMobile ? '15px' : '20px',
       padding: isMobile ? '10px' : '20px',
       borderBottom: '1px solid #00ff00',
       position: 'relative',
@@ -276,12 +276,12 @@ function App() {
     },
     toolbar: {
       display: 'flex',
-      justifyContent: 'space-between',
+      justifyContent: 'center',
       alignItems: 'center',
-      gap: isMobile ? '5px' : '8px',
+      gap: isMobile ? '5px' : '15px',
       marginBottom: '20px',
       flexWrap: 'nowrap',
-      padding: isMobile ? '8px' : '10px',
+      padding: isMobile ? '8px' : '15px',
       backgroundColor: 'rgba(0, 255, 0, 0.02)',
       borderRadius: '4px',
       border: '1px solid rgba(0, 255, 0, 0.2)',
@@ -289,8 +289,8 @@ function App() {
       boxSizing: 'border-box',
     },
     button: {
-      padding: isMobile ? '6px 8px' : '10px 20px',
-      fontSize: isMobile ? '8px' : '12px',
+      padding: isMobile ? '6px 8px' : '12px 24px',
+      fontSize: isMobile ? '8px' : '14px',
       border: '1px solid #00ff00',
       borderRadius: '4px',
       cursor: 'pointer',
@@ -298,7 +298,7 @@ function App() {
       transition: 'all 0.3s',
       backgroundColor: 'transparent',
       color: '#00ff00',
-      letterSpacing: '0.5px',
+      letterSpacing: isMobile ? '0.5px' : '1px',
       textTransform: 'uppercase',
       fontFamily: "'Courier New', monospace",
       whiteSpace: 'nowrap',
@@ -314,7 +314,8 @@ function App() {
     dropdownMenu: {
       position: 'absolute',
       top: '100%',
-      left: '0',
+      left: '50%',
+      transform: 'translateX(-50%)',
       backgroundColor: '#0a0a0a',
       border: '1px solid #00ff00',
       borderRadius: '4px',
@@ -329,8 +330,8 @@ function App() {
       cursor: 'pointer',
       transition: 'all 0.3s',
       color: '#00ff00',
-      fontSize: isMobile ? '8px' : '11px',
-      letterSpacing: '0.5px',
+      fontSize: isMobile ? '8px' : '12px',
+      letterSpacing: isMobile ? '0.5px' : '1px',
       borderBottom: '1px solid rgba(0, 255, 0, 0.1)',
       whiteSpace: 'nowrap',
       display: 'block',
@@ -381,7 +382,7 @@ function App() {
       fontSize: '14px',
     },
     backButton: {
-      marginBottom: '15px',
+      marginBottom: isMobile ? '10px' : '15px',
       padding: isMobile ? '6px 12px' : '8px 16px',
       backgroundColor: 'transparent',
       color: '#00ff00',
@@ -495,7 +496,7 @@ function App() {
           style={{...styles.button, borderColor: '#00ff00'}}
           onClick={() => setShowAddGoal(!showAddGoal)}
         >
-          {showAddGoal ? '[CLOSE]' : '[NEW]'}
+          {showAddGoal ? '[CLOSE]' : isMobile ? '[NEW]' : '[NEW TASK]'}
         </button>
 
         <div style={styles.dropdownContainer}>
@@ -503,7 +504,7 @@ function App() {
             style={{...styles.button, borderColor: '#ff9900', width: '100%'}}
             onClick={() => setShowViewMenu(!showViewMenu)}
           >
-            [VIEW]
+            {isMobile ? '[VIEW]' : '[VIEW: ' + (viewMode === 'progress' ? 'PROGRESS' : viewMode === 'calendar' ? 'CALENDAR' : 'TODAY') + ']'} ▼
           </button>
           {showViewMenu && (
             <div style={styles.dropdownMenu}>
@@ -513,8 +514,10 @@ function App() {
                   setViewMode('today');
                   setShowViewMenu(false);
                 }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(255, 153, 0, 0.1)'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
               >
-                [ TODAY ]
+                [ TODAY VIEW ]
               </button>
               <button 
                 style={styles.dropdownItem}
@@ -522,8 +525,10 @@ function App() {
                   setViewMode('progress');
                   setShowViewMenu(false);
                 }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(255, 153, 0, 0.1)'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
               >
-                [ PROGRESS ]
+                [ PROGRESS VIEW ]
               </button>
               <button 
                 style={styles.dropdownItem}
@@ -531,8 +536,10 @@ function App() {
                   setViewMode('calendar');
                   setShowViewMenu(false);
                 }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(255, 153, 0, 0.1)'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
               >
-                [ CALENDAR ]
+                [ CALENDAR VIEW ]
               </button>
             </div>
           )}
@@ -542,22 +549,22 @@ function App() {
           style={{...styles.button, borderColor: '#ff4444', color: '#ff4444'}}
           onClick={() => setShowDeleteAll(!showDeleteAll)}
         >
-          {showDeleteAll ? '[CANCEL]' : '[PURGE]'}
+          {showDeleteAll ? '[CANCEL]' : isMobile ? '[PURGE]' : '[PURGE ALL]'}
         </button>
       </div>
 
       {showDeleteAll && (
         <div style={styles.dangerZone}>
-          <h3 style={styles.dangerTitle}>⚠ WARNING</h3>
+          <h3 style={styles.dangerTitle}>⚠ WARNING: DESTRUCTIVE OPERATION</h3>
           <p style={{textAlign: 'center', marginBottom: '15px', color: '#ff4444', fontSize: '11px'}}>
-            Delete all tasks permanently?
+            This action will permanently delete all tasks!
           </p>
           <div style={{display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap'}}>
             <button 
               style={{...styles.button, borderColor: '#ff4444', color: '#ff4444'}}
               onClick={deleteAllGoals}
             >
-              [ CONFIRM ]
+              [ CONFIRM PURGE ]
             </button>
             <button 
               style={{...styles.button, borderColor: '#666', color: '#666'}}

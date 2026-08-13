@@ -117,7 +117,7 @@ function CalendarView({ goals }) {
       gap: '2px',
     },
     dayCell: {
-      minHeight: '50px',
+      minHeight: '70px',
       padding: '4px',
       backgroundColor: 'rgba(0, 255, 0, 0.02)',
       borderRadius: '2px',
@@ -128,7 +128,7 @@ function CalendarView({ goals }) {
       overflow: 'hidden',
     },
     dayCellToday: {
-      minHeight: '50px',
+      minHeight: '70px',
       padding: '4px',
       backgroundColor: 'rgba(0, 255, 0, 0.05)',
       borderRadius: '2px',
@@ -139,7 +139,7 @@ function CalendarView({ goals }) {
       overflow: 'hidden',
     },
     dayCellSelected: {
-      minHeight: '50px',
+      minHeight: '70px',
       padding: '4px',
       backgroundColor: 'rgba(0, 255, 0, 0.1)',
       borderRadius: '2px',
@@ -164,26 +164,25 @@ function CalendarView({ goals }) {
     goalBadge: {
       padding: '1px 3px',
       borderRadius: '2px',
-      fontSize: '6px',
-      backgroundColor: 'rgba(255, 153, 0, 0.2)',
-      color: '#ff9900',
+      fontSize: '7px',
       whiteSpace: 'nowrap',
       overflow: 'hidden',
       textOverflow: 'ellipsis',
       maxWidth: '100%',
       letterSpacing: '0.3px',
+      color: '#ffffff',
     },
     goalBadgeCompleted: {
       padding: '1px 3px',
       borderRadius: '2px',
-      fontSize: '6px',
-      backgroundColor: 'rgba(0, 255, 0, 0.2)',
-      color: '#00ff00',
+      fontSize: '7px',
       whiteSpace: 'nowrap',
       overflow: 'hidden',
       textOverflow: 'ellipsis',
       maxWidth: '100%',
       letterSpacing: '0.3px',
+      color: '#ffffff',
+      textDecoration: 'line-through',
     },
     detailsPanel: {
       marginTop: '15px',
@@ -221,6 +220,15 @@ function CalendarView({ goals }) {
       fontSize: '10px',
       flexShrink: 0,
     },
+    colorDot: {
+      width: '8px',
+      height: '8px',
+      borderRadius: '50%',
+      display: 'inline-block',
+      marginRight: '5px',
+      verticalAlign: 'middle',
+      flexShrink: 0,
+    },
   };
 
   const year = currentMonth.getFullYear();
@@ -242,6 +250,8 @@ function CalendarView({ goals }) {
         <button 
           style={styles.navButton} 
           onClick={() => changeMonth(-1)}
+          onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(0, 255, 0, 0.1)'}
+          onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
         >
           ←
         </button>
@@ -251,6 +261,8 @@ function CalendarView({ goals }) {
         <button 
           style={styles.navButton} 
           onClick={() => changeMonth(1)}
+          onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(0, 255, 0, 0.1)'}
+          onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
         >
           →
         </button>
@@ -280,16 +292,22 @@ function CalendarView({ goals }) {
             >
               <div style={styles.dayNumber}>{date.getDate()}</div>
               <div style={styles.goalsContainer}>
-                {goalsForDate.slice(0, 3).map(goal => {
+                {goalsForDate.slice(0, 4).map(goal => {
                   const goalId = goal.id || goal._id;
                   const completed = isDateCompleted(date, goalId);
+                  const goalColor = goal.color || '#00ff00';
+                  
                   return (
                     <span
                       key={goalId}
-                      style={completed ? styles.goalBadgeCompleted : styles.goalBadge}
+                      style={{
+                        ...(completed ? styles.goalBadgeCompleted : styles.goalBadge),
+                        backgroundColor: completed ? goalColor : `${goalColor}66`,
+                        border: `1px solid ${goalColor}`,
+                      }}
                       title={`${goal.name} - ${completed ? 'COMPLETED' : 'PENDING'}`}
                     >
-                      {completed ? '✓' : '•'}
+                      {completed ? '✓ ' : '• '}{goal.name.substring(0, 10)}
                     </span>
                   );
                 })}
@@ -314,9 +332,18 @@ function CalendarView({ goals }) {
             getGoalsForDate(selectedDate).map(goal => {
               const goalId = goal.id || goal._id;
               const completed = isDateCompleted(selectedDate, goalId);
+              const goalColor = goal.color || '#00ff00';
+              
               return (
                 <div key={goalId} style={styles.goalItem}>
-                  <span style={{color: '#00ff00', fontSize: '11px', flex: 1}}>{goal.name}</span>
+                  <span style={{color: '#00ff00', fontSize: '11px', flex: 1, display: 'flex', alignItems: 'center'}}>
+                    <span style={{
+                      ...styles.colorDot,
+                      backgroundColor: goalColor,
+                      boxShadow: `0 0 3px ${goalColor}`,
+                    }} />
+                    {goal.name}
+                  </span>
                   <span style={completed ? styles.completedIcon : styles.pendingIcon}>
                     {completed ? '[DONE]' : '[PEND]'}
                   </span>
