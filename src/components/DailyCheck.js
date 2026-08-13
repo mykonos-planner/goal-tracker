@@ -13,62 +13,102 @@ function DailyCheck({ goals, onToggleCheck }) {
 
   const styles = {
     container: {
-      backgroundColor: 'white',
-      padding: '25px',
-      borderRadius: '12px',
-      boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
+      backgroundColor: 'rgba(0, 255, 0, 0.02)',
+      padding: '20px',
+      borderRadius: '4px',
+      border: '1px solid rgba(0, 255, 0, 0.3)',
       marginBottom: '30px',
+      fontFamily: "'Courier New', monospace",
     },
     header: {
-      color: '#333',
+      color: '#00ff00',
       marginBottom: '20px',
-      fontSize: '1.3em',
+      fontSize: '1.1em',
+      letterSpacing: '1px',
+      borderBottom: '1px solid rgba(0, 255, 0, 0.3)',
+      paddingBottom: '15px',
     },
     goalItem: {
       display: 'flex',
       alignItems: 'center',
       padding: '15px',
       marginBottom: '10px',
-      backgroundColor: '#f5f5f5',
-      borderRadius: '8px',
+      borderRadius: '4px',
       cursor: 'pointer',
-      transition: 'background-color 0.3s',
+      transition: 'all 0.3s',
+      border: '1px solid rgba(0, 255, 0, 0.2)',
+      flexWrap: 'wrap',
+      gap: '10px',
     },
     checkbox: {
-      width: '24px',
-      height: '24px',
+      width: '20px',
+      height: '20px',
       marginRight: '15px',
       cursor: 'pointer',
+      accentColor: '#00ff00',
     },
     goalName: {
-      fontSize: '16px',
-      color: '#333',
+      fontSize: '14px',
+      color: '#00ff00',
       flex: 1,
+      minWidth: '150px',
+      letterSpacing: '0.5px',
     },
     goalInfo: {
-      fontSize: '12px',
-      color: '#666',
-      marginLeft: '10px',
+      fontSize: '11px',
+      color: '#00cc00',
+      marginLeft: 'auto',
+      letterSpacing: '1px',
+      whiteSpace: 'nowrap',
     },
     emptyMessage: {
       textAlign: 'center',
-      color: '#999',
+      color: '#00cc00',
       padding: '20px',
+      fontSize: '14px',
+      letterSpacing: '1px',
     },
     completedToday: {
-      backgroundColor: '#e8f5e9',
+      backgroundColor: 'rgba(0, 255, 0, 0.08)',
+      border: '1px solid #00ff00',
     },
     notCompletedToday: {
-      backgroundColor: '#f5f5f5',
-    }
+      backgroundColor: 'rgba(0, 255, 0, 0.02)',
+    },
+    progressSummary: {
+      marginTop: '20px',
+      padding: '15px',
+      backgroundColor: 'rgba(0, 255, 0, 0.05)',
+      borderRadius: '4px',
+      border: '1px solid rgba(0, 255, 0, 0.2)',
+      textAlign: 'center',
+    },
+    progressText: {
+      color: '#00ff00',
+      fontSize: '14px',
+      letterSpacing: '1px',
+      marginBottom: '10px',
+    },
+    progressBar: {
+      width: '100%',
+      height: '10px',
+      backgroundColor: 'rgba(0, 255, 0, 0.1)',
+      borderRadius: '2px',
+      overflow: 'hidden',
+    },
+    progressFill: {
+      height: '100%',
+      background: 'linear-gradient(90deg, #003300, #00ff00)',
+      transition: 'width 0.5s ease-in-out',
+      borderRadius: '2px',
+    },
   };
 
-  // Controllo se goals è un array valido
   if (!Array.isArray(goals) || goals.length === 0) {
     return (
       <div style={styles.container}>
         <p style={styles.emptyMessage}>
-          Nessun obiettivo da monitorare. Aggiungi un nuovo obiettivo!
+          [ NO TASKS AVAILABLE ]
         </p>
       </div>
     );
@@ -79,9 +119,16 @@ function DailyCheck({ goals, onToggleCheck }) {
            (Array.isArray(goal.dailyHistory) && goal.dailyHistory.includes(todayString));
   };
 
+  const completedCount = goals.filter(goal => isCompletedToday(goal)).length;
+  const totalCount = goals.length;
+  const progressPercent = (completedCount / totalCount) * 100;
+
   return (
     <div style={styles.container}>
-      <h2 style={styles.header}>📅 Check Giornaliero - {todayFormatted}</h2>
+      <h2 style={styles.header}>
+        [ DAILY CHECK - {todayFormatted.toUpperCase()} ]
+      </h2>
+      
       {goals.map(goal => {
         if (!goal || (!goal.id && !goal._id)) {
           return null;
@@ -100,10 +147,10 @@ function DailyCheck({ goals, onToggleCheck }) {
             }}
             onClick={() => onToggleCheck(goalId, !completed)}
             onMouseEnter={(e) => {
-              if (!completed) e.target.style.backgroundColor = '#e3f2fd';
+              if (!completed) e.target.style.backgroundColor = 'rgba(0, 255, 0, 0.05)';
             }}
             onMouseLeave={(e) => {
-              e.target.style.backgroundColor = completed ? '#e8f5e9' : '#f5f5f5';
+              e.target.style.backgroundColor = completed ? 'rgba(0, 255, 0, 0.08)' : 'rgba(0, 255, 0, 0.02)';
             }}
           >
             <input
@@ -114,16 +161,28 @@ function DailyCheck({ goals, onToggleCheck }) {
               onClick={(e) => e.stopPropagation()}
             />
             <span style={styles.goalName}>
-              {goal.name || 'Obiettivo senza nome'}
+              {goal.name || 'UNTITLED'}
             </span>
             <span style={styles.goalInfo}>
               {completed 
-                ? '✓ Completato oggi' 
-                : `Da fare (${dailyHistory.length}/${goal.duration || 0} giorni completati)`}
+                ? '[✓ DONE]' 
+                : `[PENDING - ${dailyHistory.length}/${goal.duration || 0}]`}
             </span>
           </div>
         );
       })}
+
+      <div style={styles.progressSummary}>
+        <div style={styles.progressText}>
+          [ PROGRESS: {completedCount}/{totalCount} COMPLETED ]
+        </div>
+        <div style={styles.progressBar}>
+          <div style={{
+            ...styles.progressFill,
+            width: `${progressPercent}%`
+          }} />
+        </div>
+      </div>
     </div>
   );
 }

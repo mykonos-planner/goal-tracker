@@ -6,15 +6,16 @@ import CalendarView from './components/CalendarView';
 
 function App() {
   const [goals, setGoals] = useState([]);
-  const [currentSection, setCurrentSection] = useState('home'); // 'home', 'goals'
+  const [currentSection, setCurrentSection] = useState('home');
   const [showAddGoal, setShowAddGoal] = useState(false);
   const [showDailyCheck, setShowDailyCheck] = useState(false);
-  const [viewMode, setViewMode] = useState('progress'); // 'progress' o 'calendar'
+  const [viewMode, setViewMode] = useState('progress');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showDeleteAll, setShowDeleteAll] = useState(false);
   const [showViewMenu, setShowViewMenu] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     fetchGoals();
@@ -23,7 +24,17 @@ function App() {
       setCurrentTime(new Date());
     }, 1000);
     
-    return () => clearInterval(timer);
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener('resize', handleResize);
+    };
   }, []);
 
   const fetchGoals = async () => {
@@ -125,23 +136,26 @@ function App() {
   };
 
   const deleteAllGoals = async () => {
-    if (!window.confirm('Sei sicuro di voler eliminare TUTTI gli obiettivi? Questa azione non può essere annullata!')) {
-      return;
-    }
-    
     try {
       setLoading(true);
+      
+      console.log('Chiamata delete-all API...');
       
       const response = await fetch('/api/goals/delete-all', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({ action: 'delete-all' }),
       });
       
+      console.log('Risposta delete-all:', response.status);
+      
+      const responseData = await response.json().catch(() => ({}));
+      console.log('Dati risposta:', responseData);
+      
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to delete all goals');
+        throw new Error(responseData.error || 'Failed to delete all goals');
       }
       
       setGoals([]);
@@ -199,19 +213,19 @@ function App() {
     container: {
       maxWidth: '1200px',
       margin: '0 auto',
-      padding: '20px',
+      padding: isMobile ? '10px' : '20px',
       fontFamily: "'Courier New', monospace",
       minHeight: '100vh',
     },
     header: {
       textAlign: 'center',
-      marginBottom: '30px',
-      padding: '20px',
+      marginBottom: '20px',
+      padding: isMobile ? '15px' : '20px',
       borderBottom: '1px solid #00ff00',
       position: 'relative',
     },
     title: {
-      fontSize: '2.5em',
+      fontSize: isMobile ? '1.8em' : '2.5em',
       marginBottom: '10px',
       color: '#00ff00',
       letterSpacing: '3px',
@@ -224,32 +238,33 @@ function App() {
       letterSpacing: '1px',
     },
     timestamp: {
-      position: 'absolute',
-      top: '10px',
-      right: '20px',
-      fontSize: '0.8em',
+      position: isMobile ? 'static' : 'absolute',
+      top: isMobile ? 'auto' : '10px',
+      right: isMobile ? 'auto' : '20px',
+      fontSize: '0.7em',
       color: '#00ff00',
       opacity: '0.6',
+      marginTop: isMobile ? '10px' : '0',
     },
     mainMenu: {
       display: 'flex',
       justifyContent: 'center',
-      gap: '20px',
+      gap: '15px',
       marginBottom: '30px',
       flexWrap: 'wrap',
     },
     menuCard: {
-      padding: '30px',
+      padding: isMobile ? '20px' : '30px',
       border: '1px solid #00ff00',
       borderRadius: '4px',
       cursor: 'pointer',
       transition: 'all 0.3s',
       textAlign: 'center',
-      minWidth: '200px',
+      minWidth: isMobile ? '150px' : '200px',
       backgroundColor: 'rgba(0, 255, 0, 0.02)',
     },
     menuCardTitle: {
-      fontSize: '1.2em',
+      fontSize: '1.1em',
       color: '#00ff00',
       marginBottom: '10px',
       letterSpacing: '2px',
@@ -262,22 +277,23 @@ function App() {
     toolbar: {
       display: 'flex',
       justifyContent: 'center',
-      gap: '10px',
+      gap: '8px',
       marginBottom: '20px',
       flexWrap: 'wrap',
-      padding: '15px',
+      padding: '10px',
       backgroundColor: 'rgba(0, 255, 0, 0.02)',
       borderRadius: '4px',
       border: '1px solid rgba(0, 255, 0, 0.2)',
     },
     buttonGroup: {
       display: 'flex',
-      gap: '10px',
+      gap: '8px',
       alignItems: 'center',
+      flexWrap: 'wrap',
     },
     button: {
-      padding: '10px 20px',
-      fontSize: '12px',
+      padding: isMobile ? '8px 15px' : '10px 20px',
+      fontSize: isMobile ? '10px' : '12px',
       border: '1px solid #00ff00',
       borderRadius: '4px',
       cursor: 'pointer',
@@ -288,6 +304,7 @@ function App() {
       letterSpacing: '1px',
       textTransform: 'uppercase',
       fontFamily: "'Courier New', monospace",
+      whiteSpace: 'nowrap',
     },
     dropdownContainer: {
       position: 'relative',
@@ -302,14 +319,15 @@ function App() {
       borderRadius: '4px',
       marginTop: '5px',
       zIndex: 1000,
-      minWidth: '180px',
+      minWidth: '160px',
+      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.5)',
     },
     dropdownItem: {
-      padding: '10px 20px',
+      padding: '10px 15px',
       cursor: 'pointer',
       transition: 'all 0.3s',
       color: '#00ff00',
-      fontSize: '12px',
+      fontSize: '11px',
       letterSpacing: '1px',
       borderBottom: '1px solid rgba(0, 255, 0, 0.1)',
     },
@@ -321,11 +339,12 @@ function App() {
       marginBottom: '20px',
       textAlign: 'center',
       border: '1px solid #ff4444',
+      fontSize: '12px',
     },
     loadingMessage: {
       textAlign: 'center',
       color: '#00ff00',
-      fontSize: '18px',
+      fontSize: '16px',
       padding: '40px',
       border: '1px solid #00ff00',
       backgroundColor: 'rgba(0, 255, 0, 0.03)',
@@ -333,26 +352,27 @@ function App() {
     syncStatus: {
       textAlign: 'center',
       color: '#00ff00',
-      fontSize: '12px',
+      fontSize: '10px',
       marginTop: '20px',
       opacity: '0.6',
       letterSpacing: '1px',
     },
     dangerZone: {
       backgroundColor: 'rgba(255, 0, 0, 0.05)',
-      padding: '20px',
+      padding: '15px',
       borderRadius: '4px',
-      marginBottom: '30px',
+      marginBottom: '20px',
       border: '1px solid #ff4444',
     },
     dangerTitle: {
       color: '#ff4444',
-      marginBottom: '15px',
+      marginBottom: '10px',
       textAlign: 'center',
-      letterSpacing: '2px',
+      letterSpacing: '1px',
+      fontSize: '14px',
     },
     backButton: {
-      marginBottom: '20px',
+      marginBottom: '15px',
       padding: '8px 16px',
       backgroundColor: 'transparent',
       color: '#00ff00',
@@ -360,7 +380,7 @@ function App() {
       borderRadius: '4px',
       cursor: 'pointer',
       fontFamily: "'Courier New', monospace",
-      fontSize: '12px',
+      fontSize: '11px',
       letterSpacing: '1px',
     },
   };
@@ -379,7 +399,6 @@ function App() {
     );
   }
 
-  // Home Page
   if (currentSection === 'home') {
     return (
       <div style={styles.container}>
@@ -418,7 +437,6 @@ function App() {
     );
   }
 
-  // Goals Section
   return (
     <div style={styles.container}>
       <div style={styles.header}>
@@ -437,7 +455,7 @@ function App() {
           setShowDailyCheck(false);
         }}
       >
-        [ BACK TO MENU ]
+        [ ← BACK ]
       </button>
 
       {error && (
@@ -473,7 +491,7 @@ function App() {
               setShowDailyCheck(false);
             }}
           >
-            {showAddGoal ? '[ CLOSE ]' : '[ NEW TASK ]'}
+            {showAddGoal ? '[CLOSE]' : '[NEW TASK]'}
           </button>
           
           <button 
@@ -483,7 +501,7 @@ function App() {
               setShowAddGoal(false);
             }}
           >
-            {showDailyCheck ? '[ CLOSE ]' : '[ DAILY CHECK ]'}
+            {showDailyCheck ? '[CLOSE]' : '[DAILY CHECK]'}
           </button>
         </div>
 
@@ -492,7 +510,7 @@ function App() {
             style={{...styles.button, borderColor: '#ff9900'}}
             onClick={() => setShowViewMenu(!showViewMenu)}
           >
-            [ VIEW: {viewMode === 'progress' ? 'PROGRESS' : 'CALENDAR'} ▼ ]
+            [VIEW: {viewMode === 'progress' ? 'PROG' : 'CAL'} ▼]
           </button>
           {showViewMenu && (
             <div style={styles.dropdownMenu}>
@@ -523,22 +541,22 @@ function App() {
         </div>
 
         <button 
-          style={{...styles.button, borderColor: '#ff4444'}}
+          style={{...styles.button, borderColor: '#ff4444', color: '#ff4444'}}
           onClick={() => setShowDeleteAll(!showDeleteAll)}
         >
-          {showDeleteAll ? '[ CANCEL ]' : '[ PURGE ALL ]'}
+          {showDeleteAll ? '[CANCEL]' : '[PURGE ALL]'}
         </button>
       </div>
 
       {showDeleteAll && (
         <div style={styles.dangerZone}>
           <h3 style={styles.dangerTitle}>⚠ WARNING: DESTRUCTIVE OPERATION</h3>
-          <p style={{textAlign: 'center', marginBottom: '20px', color: '#ff4444'}}>
-            This action will permanently delete all tasks. This cannot be undone!
+          <p style={{textAlign: 'center', marginBottom: '15px', color: '#ff4444', fontSize: '11px'}}>
+            This action will permanently delete all tasks!
           </p>
-          <div style={{display: 'flex', justifyContent: 'center', gap: '10px'}}>
+          <div style={{display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap'}}>
             <button 
-              style={{...styles.button, borderColor: '#ff4444'}}
+              style={{...styles.button, borderColor: '#ff4444', color: '#ff4444'}}
               onClick={deleteAllGoals}
             >
               [ CONFIRM PURGE ]
@@ -571,7 +589,7 @@ function App() {
       )}
 
       <div style={styles.syncStatus}>
-        <p>[ DATABASE SYNCED ] | [ TASKS: {goals.length} ]</p>
+        <p>[ SYNCED ] | [ TASKS: {goals.length} ]</p>
       </div>
     </div>
   );

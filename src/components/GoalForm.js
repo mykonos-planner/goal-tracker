@@ -44,17 +44,17 @@ function GoalForm({ onAddGoal }) {
 
   const styles = {
     form: {
-      backgroundColor: 'rgba(0, 255, 0, 0.05)',
-      padding: '25px',
+      backgroundColor: 'rgba(0, 255, 0, 0.02)',
+      padding: '20px',
       borderRadius: '4px',
       boxShadow: '0 0 20px rgba(0, 255, 0, 0.1)',
       marginBottom: '30px',
-      border: '1px solid #00ff00',
+      border: '1px solid rgba(0, 255, 0, 0.3)',
       fontFamily: "'Courier New', monospace",
     },
     input: {
       width: '100%',
-      padding: '12px',
+      padding: '10px',
       marginBottom: '15px',
       border: '1px solid #00ff00',
       borderRadius: '4px',
@@ -66,7 +66,7 @@ function GoalForm({ onAddGoal }) {
     },
     select: {
       width: '100%',
-      padding: '12px',
+      padding: '10px',
       marginBottom: '15px',
       border: '1px solid #00ff00',
       borderRadius: '4px',
@@ -78,12 +78,12 @@ function GoalForm({ onAddGoal }) {
     },
     button: {
       width: '100%',
-      padding: '14px',
+      padding: '12px',
       backgroundColor: 'transparent',
       color: '#00ff00',
       border: '1px solid #00ff00',
       borderRadius: '4px',
-      fontSize: '14px',
+      fontSize: '13px',
       fontWeight: 'bold',
       cursor: 'pointer',
       transition: 'all 0.3s',
@@ -97,21 +97,21 @@ function GoalForm({ onAddGoal }) {
       color: '#00ff00',
       fontWeight: 'bold',
       letterSpacing: '1px',
-      fontSize: '12px',
+      fontSize: '11px',
       textTransform: 'uppercase',
     },
     daysContainer: {
       display: 'flex',
       flexWrap: 'wrap',
-      gap: '10px',
+      gap: '8px',
       marginBottom: '15px',
     },
     dayButton: {
-      padding: '8px 12px',
+      padding: '8px 10px',
       border: '1px solid #00ff00',
       borderRadius: '4px',
       cursor: 'pointer',
-      fontSize: '12px',
+      fontSize: '10px',
       fontWeight: 'bold',
       transition: 'all 0.3s',
       backgroundColor: 'transparent',
@@ -119,11 +119,11 @@ function GoalForm({ onAddGoal }) {
       fontFamily: "'Courier New', monospace",
     },
     dayButtonSelected: {
-      padding: '8px 12px',
+      padding: '8px 10px',
       border: '1px solid #00ff00',
       borderRadius: '4px',
       cursor: 'pointer',
-      fontSize: '12px',
+      fontSize: '10px',
       fontWeight: 'bold',
       transition: 'all 0.3s',
       backgroundColor: 'rgba(0, 255, 0, 0.2)',
@@ -134,7 +134,7 @@ function GoalForm({ onAddGoal }) {
 
   return (
     <form onSubmit={handleSubmit} style={styles.form}>
-      <h2 style={{marginBottom: '20px', color: '#00ff00', letterSpacing: '2px'}}>
+      <h2 style={{marginBottom: '15px', color: '#00ff00', letterSpacing: '2px', fontSize: '16px'}}>
         [ NEW TASK ]
       </h2>
       
