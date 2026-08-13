@@ -107,8 +107,8 @@ function CalendarView({ goals }) {
       transition: 'all 0.3s',
       fontFamily: "'Courier New', monospace",
       flexShrink: 0,
-      minWidth: '40px',
-      minHeight: '40px',
+      minWidth: isMobile ? '40px' : 'auto',
+      minHeight: isMobile ? '40px' : 'auto',
     },
     weekDays: {
       display: 'grid',
@@ -170,13 +170,13 @@ function CalendarView({ goals }) {
       marginBottom: isMobile ? '3px' : '3px',
       fontSize: isMobile ? '11px' : '10px',
       fontWeight: 'bold',
-      textAlign: 'center',
+      textAlign: isMobile ? 'center' : 'left',
     },
     goalsContainer: {
       display: 'flex',
       flexDirection: 'column',
       gap: isMobile ? '2px' : '1px',
-      alignItems: 'center',
+      alignItems: isMobile ? 'center' : 'stretch',
     },
     goalDot: {
       width: isMobile ? '8px' : '6px',
@@ -184,6 +184,31 @@ function CalendarView({ goals }) {
       borderRadius: '50%',
       transition: 'all 0.3s',
       flexShrink: 0,
+    },
+    goalBadge: {
+      padding: '1px 3px',
+      borderRadius: '2px',
+      fontSize: '7px',
+      whiteSpace: 'nowrap',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      maxWidth: '100%',
+      letterSpacing: '0.3px',
+      color: '#ffffff',
+      display: 'block',
+    },
+    goalBadgeCompleted: {
+      padding: '1px 3px',
+      borderRadius: '2px',
+      fontSize: '7px',
+      whiteSpace: 'nowrap',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      maxWidth: '100%',
+      letterSpacing: '0.3px',
+      color: '#ffffff',
+      textDecoration: 'line-through',
+      display: 'block',
     },
     detailsPanel: {
       marginTop: '15px',
@@ -295,18 +320,36 @@ function CalendarView({ goals }) {
                   const completed = isDateCompleted(date, goalId);
                   const goalColor = goal.color || '#00ff00';
                   
-                  return (
-                    <span
-                      key={goalId}
-                      style={{
-                        ...styles.goalDot,
-                        backgroundColor: completed ? goalColor : `${goalColor}66`,
-                        border: `1px solid ${goalColor}`,
-                        boxShadow: completed ? `0 0 4px ${goalColor}` : 'none',
-                      }}
-                      title={`${goal.name} - ${completed ? 'COMPLETED' : 'PENDING'}`}
-                    />
-                  );
+                  if (isMobile) {
+                    // Mobile: mostra pallini colorati
+                    return (
+                      <span
+                        key={goalId}
+                        style={{
+                          ...styles.goalDot,
+                          backgroundColor: completed ? goalColor : `${goalColor}66`,
+                          border: `1px solid ${goalColor}`,
+                          boxShadow: completed ? `0 0 4px ${goalColor}` : 'none',
+                        }}
+                        title={`${goal.name} - ${completed ? 'COMPLETED' : 'PENDING'}`}
+                      />
+                    );
+                  } else {
+                    // Desktop: mostra badge con nome
+                    return (
+                      <span
+                        key={goalId}
+                        style={{
+                          ...(completed ? styles.goalBadgeCompleted : styles.goalBadge),
+                          backgroundColor: completed ? goalColor : `${goalColor}66`,
+                          border: `1px solid ${goalColor}`,
+                        }}
+                        title={`${goal.name} - ${completed ? 'COMPLETED' : 'PENDING'}`}
+                      >
+                        {completed ? '✓ ' : '• '}{goal.name.substring(0, 10)}
+                      </span>
+                    );
+                  }
                 })}
               </div>
             </div>
@@ -333,7 +376,7 @@ function CalendarView({ goals }) {
               
               return (
                 <div key={goalId} style={styles.goalItem}>
-                  <span style={{color: '#00ff00', fontSize: isMobile ? '11px' : '11px', flex: 1, display: 'flex', alignItems: 'center'}}>
+                  <span style={{color: '#00ff00', fontSize: '11px', flex: 1, display: 'flex', alignItems: 'center'}}>
                     <span style={{
                       ...styles.colorDot,
                       backgroundColor: goalColor,
