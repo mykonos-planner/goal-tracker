@@ -3,6 +3,7 @@ import GoalForm from './components/GoalForm';
 import ProgressBars from './components/ProgressBars';
 import CalendarView from './components/CalendarView';
 import TodayView from './components/TodayView';
+import NetworkView from './components/NetworkView';
 
 function App() {
   const [goals, setGoals] = useState([]);
@@ -289,8 +290,8 @@ function App() {
       boxSizing: 'border-box',
     },
     button: {
-      padding: isMobile ? '6px 8px' : '12px 24px',
-      fontSize: isMobile ? '8px' : '14px',
+      padding: isMobile ? '10px 14px' : '12px 24px',
+      fontSize: isMobile ? '10px' : '14px',
       border: '1px solid #00ff00',
       borderRadius: '4px',
       cursor: 'pointer',
@@ -305,6 +306,7 @@ function App() {
       flex: isMobile ? '1' : '0 0 auto',
       minWidth: '0',
       textAlign: 'center',
+      minHeight: isMobile ? '40px' : 'auto',
     },
     dropdownContainer: {
       position: 'relative',
@@ -326,11 +328,11 @@ function App() {
       overflow: 'hidden',
     },
     dropdownItem: {
-      padding: isMobile ? '8px 10px' : '12px 20px',
+      padding: isMobile ? '12px 15px' : '12px 20px',
       cursor: 'pointer',
       transition: 'all 0.3s',
       color: '#00ff00',
-      fontSize: isMobile ? '8px' : '12px',
+      fontSize: isMobile ? '10px' : '12px',
       letterSpacing: isMobile ? '0.5px' : '1px',
       borderBottom: '1px solid rgba(0, 255, 0, 0.1)',
       whiteSpace: 'nowrap',
@@ -438,6 +440,24 @@ function App() {
               Track your daily goals
             </div>
           </div>
+          
+          <div 
+            style={styles.menuCard}
+            onClick={() => setCurrentSection('network')}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = 'rgba(0, 204, 255, 0.1)';
+              e.target.style.boxShadow = '0 0 20px rgba(0, 204, 255, 0.2)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = 'rgba(0, 255, 0, 0.02)';
+              e.target.style.boxShadow = 'none';
+            }}
+          >
+            <div style={styles.menuCardTitle}>[ NETWORK LINK ]</div>
+            <div style={styles.menuCardDescription}>
+              Manage your connections
+            </div>
+          </div>
         </div>
 
         <div style={styles.syncStatus}>
@@ -445,6 +465,10 @@ function App() {
         </div>
       </div>
     );
+  }
+
+  if (currentSection === 'network') {
+    return <NetworkView />;
   }
 
   return (
