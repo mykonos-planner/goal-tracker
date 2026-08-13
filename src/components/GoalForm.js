@@ -7,13 +7,13 @@ function GoalForm({ onAddGoal }) {
   const [selectedDays, setSelectedDays] = useState([]);
 
   const weekDays = [
-    { value: 0, label: 'Lun' },
-    { value: 1, label: 'Mar' },
-    { value: 2, label: 'Mer' },
-    { value: 3, label: 'Gio' },
-    { value: 4, label: 'Ven' },
-    { value: 5, label: 'Sab' },
-    { value: 6, label: 'Dom' },
+    { value: 0, label: 'MON' },
+    { value: 1, label: 'TUE' },
+    { value: 2, label: 'WED' },
+    { value: 3, label: 'THU' },
+    { value: 4, label: 'FRI' },
+    { value: 5, label: 'SAT' },
+    { value: 6, label: 'SUN' },
   ];
 
   const handleSubmit = (e) => {
@@ -44,48 +44,61 @@ function GoalForm({ onAddGoal }) {
 
   const styles = {
     form: {
-      backgroundColor: 'white',
+      backgroundColor: 'rgba(0, 255, 0, 0.05)',
       padding: '25px',
-      borderRadius: '12px',
-      boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
+      borderRadius: '4px',
+      boxShadow: '0 0 20px rgba(0, 255, 0, 0.1)',
       marginBottom: '30px',
+      border: '1px solid #00ff00',
+      fontFamily: "'Courier New', monospace",
     },
     input: {
       width: '100%',
       padding: '12px',
       marginBottom: '15px',
-      border: '2px solid #e0e0e0',
-      borderRadius: '8px',
-      fontSize: '16px',
+      border: '1px solid #00ff00',
+      borderRadius: '4px',
+      fontSize: '14px',
       outline: 'none',
+      backgroundColor: 'transparent',
+      color: '#00ff00',
+      fontFamily: "'Courier New', monospace",
     },
     select: {
       width: '100%',
       padding: '12px',
       marginBottom: '15px',
-      border: '2px solid #e0e0e0',
-      borderRadius: '8px',
-      fontSize: '16px',
+      border: '1px solid #00ff00',
+      borderRadius: '4px',
+      fontSize: '14px',
       outline: 'none',
-      backgroundColor: 'white',
+      backgroundColor: '#0a0a0a',
+      color: '#00ff00',
+      fontFamily: "'Courier New', monospace",
     },
     button: {
       width: '100%',
       padding: '14px',
-      backgroundColor: '#4CAF50',
-      color: 'white',
-      border: 'none',
-      borderRadius: '8px',
-      fontSize: '16px',
+      backgroundColor: 'transparent',
+      color: '#00ff00',
+      border: '1px solid #00ff00',
+      borderRadius: '4px',
+      fontSize: '14px',
       fontWeight: 'bold',
       cursor: 'pointer',
-      transition: 'background-color 0.3s',
+      transition: 'all 0.3s',
+      letterSpacing: '2px',
+      textTransform: 'uppercase',
+      fontFamily: "'Courier New', monospace",
     },
     label: {
       display: 'block',
       marginBottom: '8px',
-      color: '#333',
+      color: '#00ff00',
       fontWeight: 'bold',
+      letterSpacing: '1px',
+      fontSize: '12px',
+      textTransform: 'uppercase',
     },
     daysContainer: {
       display: 'flex',
@@ -94,44 +107,48 @@ function GoalForm({ onAddGoal }) {
       marginBottom: '15px',
     },
     dayButton: {
-      padding: '10px 15px',
-      border: '2px solid #e0e0e0',
-      borderRadius: '8px',
+      padding: '8px 12px',
+      border: '1px solid #00ff00',
+      borderRadius: '4px',
       cursor: 'pointer',
-      fontSize: '14px',
+      fontSize: '12px',
       fontWeight: 'bold',
       transition: 'all 0.3s',
-      backgroundColor: 'white',
-      color: '#333',
+      backgroundColor: 'transparent',
+      color: '#00ff00',
+      fontFamily: "'Courier New', monospace",
     },
     dayButtonSelected: {
-      padding: '10px 15px',
-      border: '2px solid #4CAF50',
-      borderRadius: '8px',
+      padding: '8px 12px',
+      border: '1px solid #00ff00',
+      borderRadius: '4px',
       cursor: 'pointer',
-      fontSize: '14px',
+      fontSize: '12px',
       fontWeight: 'bold',
       transition: 'all 0.3s',
-      backgroundColor: '#4CAF50',
-      color: 'white',
+      backgroundColor: 'rgba(0, 255, 0, 0.2)',
+      color: '#00ff00',
+      fontFamily: "'Courier New', monospace",
     },
   };
 
   return (
     <form onSubmit={handleSubmit} style={styles.form}>
-      <h2 style={{marginBottom: '20px', color: '#333'}}>Nuovo Obiettivo</h2>
+      <h2 style={{marginBottom: '20px', color: '#00ff00', letterSpacing: '2px'}}>
+        [ NEW TASK ]
+      </h2>
       
-      <label style={styles.label}>Nome obiettivo:</label>
+      <label style={styles.label}>Task name:</label>
       <input
         type="text"
         value={name}
         onChange={(e) => setName(e.target.value)}
-        placeholder="es. Bere 1 litro d'acqua al giorno"
+        placeholder="Enter task name..."
         style={styles.input}
         required
       />
       
-      <label style={styles.label}>Durata (giorni totali):</label>
+      <label style={styles.label}>Duration (days):</label>
       <input
         type="number"
         value={duration}
@@ -142,20 +159,20 @@ function GoalForm({ onAddGoal }) {
         required
       />
       
-      <label style={styles.label}>Frequenza:</label>
+      <label style={styles.label}>Frequency:</label>
       <select
         value={frequency}
         onChange={(e) => setFrequency(e.target.value)}
         style={styles.select}
       >
-        <option value="daily">Ogni giorno</option>
-        <option value="alternate">1 giorno sì, 1 giorno no</option>
-        <option value="weekly">Giorni specifici della settimana</option>
+        <option value="daily">Daily</option>
+        <option value="alternate">Alternate days</option>
+        <option value="weekly">Specific days</option>
       </select>
       
       {frequency === 'weekly' && (
         <>
-          <label style={styles.label}>Seleziona i giorni:</label>
+          <label style={styles.label}>Select days:</label>
           <div style={styles.daysContainer}>
             {weekDays.map(day => (
               <button
@@ -174,10 +191,16 @@ function GoalForm({ onAddGoal }) {
       <button 
         type="submit" 
         style={styles.button}
-        onMouseEnter={(e) => e.target.style.backgroundColor = '#45a049'}
-        onMouseLeave={(e) => e.target.style.backgroundColor = '#4CAF50'}
+        onMouseEnter={(e) => {
+          e.target.style.backgroundColor = 'rgba(0, 255, 0, 0.2)';
+          e.target.style.boxShadow = '0 0 20px rgba(0, 255, 0, 0.3)';
+        }}
+        onMouseLeave={(e) => {
+          e.target.style.backgroundColor = 'transparent';
+          e.target.style.boxShadow = 'none';
+        }}
       >
-        Aggiungi Obiettivo
+        [ ADD TASK ]
       </button>
     </form>
   );

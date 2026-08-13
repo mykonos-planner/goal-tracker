@@ -13,26 +13,26 @@ function ProgressBars({ goals, onDeleteGoal }) {
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) return 'Data non disponibile';
+    if (!dateString) return 'N/A';
     try {
       return new Date(dateString).toLocaleDateString('it-IT');
     } catch (error) {
-      return 'Data non valida';
+      return 'INVALID';
     }
   };
 
   const getFrequencyLabel = (goal) => {
     switch (goal.frequency) {
       case 'daily':
-        return 'Ogni giorno';
+        return 'DAILY';
       case 'alternate':
-        return '1 giorno sì, 1 no';
+        return 'ALTERNATE';
       case 'weekly':
-        const days = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'];
+        const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
         const selectedDays = (goal.frequencyDays || []).map(d => days[d]);
-        return `Ogni: ${selectedDays.join(', ')}`;
+        return `WEEKLY: ${selectedDays.join(', ')}`;
       default:
-        return 'Ogni giorno';
+        return 'DAILY';
     }
   };
 
@@ -40,12 +40,14 @@ function ProgressBars({ goals, onDeleteGoal }) {
     container: {
       display: 'grid',
       gap: '20px',
+      fontFamily: "'Courier New', monospace",
     },
     goalCard: {
-      backgroundColor: 'white',
+      backgroundColor: 'rgba(0, 255, 0, 0.03)',
       padding: '20px',
-      borderRadius: '12px',
-      boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
+      borderRadius: '4px',
+      boxShadow: '0 0 15px rgba(0, 255, 0, 0.05)',
+      border: '1px solid #00ff00',
     },
     goalHeader: {
       display: 'flex',
@@ -54,95 +56,108 @@ function ProgressBars({ goals, onDeleteGoal }) {
       marginBottom: '15px',
     },
     goalName: {
-      fontSize: '18px',
+      fontSize: '16px',
       fontWeight: 'bold',
-      color: '#333',
+      color: '#00ff00',
+      letterSpacing: '1px',
     },
     goalFrequency: {
-      fontSize: '12px',
-      color: '#666',
-      backgroundColor: '#e0e0e0',
+      fontSize: '10px',
+      color: '#00cc00',
+      backgroundColor: 'rgba(0, 255, 0, 0.1)',
       padding: '4px 8px',
-      borderRadius: '12px',
+      borderRadius: '2px',
       display: 'inline-block',
       marginLeft: '10px',
+      letterSpacing: '1px',
     },
     deleteButton: {
-      backgroundColor: '#ff4444',
-      color: 'white',
-      border: 'none',
-      borderRadius: '6px',
+      backgroundColor: 'transparent',
+      color: '#ff4444',
+      border: '1px solid #ff4444',
+      borderRadius: '4px',
       padding: '6px 12px',
       cursor: 'pointer',
-      fontSize: '14px',
+      fontSize: '12px',
+      letterSpacing: '1px',
+      fontFamily: "'Courier New', monospace",
+      transition: 'all 0.3s',
     },
     progressBarContainer: {
       width: '100%',
-      height: '30px',
-      backgroundColor: '#e0e0e0',
-      borderRadius: '15px',
+      height: '20px',
+      backgroundColor: 'rgba(0, 255, 0, 0.05)',
+      borderRadius: '2px',
       overflow: 'hidden',
       marginBottom: '10px',
       position: 'relative',
+      border: '1px solid rgba(0, 255, 0, 0.3)',
     },
     progressBar: {
       height: '100%',
-      background: 'linear-gradient(90deg, #4CAF50, #8BC34A)',
-      borderRadius: '15px',
+      background: 'linear-gradient(90deg, #003300, #00ff00)',
+      borderRadius: '2px',
       transition: 'width 0.5s ease-in-out',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      color: 'white',
+      color: '#ffffff',
       fontWeight: 'bold',
-      fontSize: '14px',
+      fontSize: '11px',
       minWidth: '50px',
+      letterSpacing: '1px',
     },
     info: {
       display: 'flex',
       justifyContent: 'space-between',
-      color: '#666',
-      fontSize: '14px',
+      color: '#00cc00',
+      fontSize: '12px',
       flexWrap: 'wrap',
       gap: '10px',
+      letterSpacing: '1px',
     },
     historyContainer: {
       marginTop: '15px',
       padding: '10px',
-      backgroundColor: '#f5f5f5',
-      borderRadius: '8px',
+      backgroundColor: 'rgba(0, 255, 0, 0.03)',
+      borderRadius: '4px',
+      border: '1px solid rgba(0, 255, 0, 0.2)',
     },
     historyTitle: {
-      fontSize: '14px',
+      fontSize: '12px',
       fontWeight: 'bold',
-      color: '#333',
+      color: '#00ff00',
       marginBottom: '8px',
+      letterSpacing: '1px',
     },
     daysGrid: {
       display: 'flex',
       flexWrap: 'wrap',
-      gap: '5px',
+      gap: '4px',
     },
     dayBox: {
-      width: '20px',
-      height: '20px',
-      borderRadius: '3px',
-      border: '1px solid #ddd',
+      width: '18px',
+      height: '18px',
+      borderRadius: '2px',
+      border: '1px solid #00ff00',
+      transition: 'all 0.3s',
     },
     emptyMessage: {
       textAlign: 'center',
-      color: '#999',
+      color: '#00ff00',
       padding: '40px 20px',
-      backgroundColor: 'white',
-      borderRadius: '12px',
+      backgroundColor: 'rgba(0, 255, 0, 0.03)',
+      borderRadius: '4px',
+      border: '1px solid #00ff00',
+      letterSpacing: '2px',
     }
   };
 
   if (!Array.isArray(goals) || goals.length === 0) {
     return (
       <div style={styles.emptyMessage}>
-        <h3>🎯 Nessun obiettivo ancora</h3>
-        <p>Clicca su "Nuovo Obiettivo" per iniziare!</p>
+        <h3>[ NO TASKS ]</h3>
+        <p>Click [ NEW TASK ] to initialize</p>
       </div>
     );
   }
@@ -164,18 +179,24 @@ function ProgressBars({ goals, onDeleteGoal }) {
           <div key={goalId || Math.random()} style={styles.goalCard}>
             <div style={styles.goalHeader}>
               <div>
-                <span style={styles.goalName}>{goal.name || 'Obiettivo senza nome'}</span>
+                <span style={styles.goalName}>{goal.name || 'UNTITLED'}</span>
                 <span style={styles.goalFrequency}>
-                  {getFrequencyLabel(goal)}
+                  [{getFrequencyLabel(goal)}]
                 </span>
               </div>
               <button 
                 style={styles.deleteButton}
                 onClick={() => onDeleteGoal(goalId)}
-                onMouseEnter={(e) => e.target.style.backgroundColor = '#cc0000'}
-                onMouseLeave={(e) => e.target.style.backgroundColor = '#ff4444'}
+                onMouseEnter={(e) => {
+                  e.target.style.backgroundColor = 'rgba(255, 68, 68, 0.1)';
+                  e.target.style.boxShadow = '0 0 10px rgba(255, 68, 68, 0.3)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.backgroundColor = 'transparent';
+                  e.target.style.boxShadow = 'none';
+                }}
               >
-                Elimina
+                [DELETE]
               </button>
             </div>
             
@@ -189,15 +210,15 @@ function ProgressBars({ goals, onDeleteGoal }) {
             </div>
             
             <div style={styles.info}>
-              <span>Iniziato: {formatDate(goal.startDate)}</span>
-              <span>Durata: {duration} giorni</span>
-              <span>Completati: {dailyHistory.length} giorni</span>
-              <span>Rimanenti: {daysRemaining} giorni</span>
+              <span>START: {formatDate(goal.startDate)}</span>
+              <span>DURATION: {duration}d</span>
+              <span>DONE: {dailyHistory.length}d</span>
+              <span>LEFT: {daysRemaining}d</span>
             </div>
 
             <div style={styles.historyContainer}>
               <div style={styles.historyTitle}>
-                Storico completamenti ({dailyHistory.length}/{duration} giorni)
+                COMPLETION HISTORY ({dailyHistory.length}/{duration})
               </div>
               <div style={styles.daysGrid}>
                 {Array.from({ length: duration }, (_, index) => {
@@ -211,9 +232,10 @@ function ProgressBars({ goals, onDeleteGoal }) {
                       key={index}
                       style={{
                         ...styles.dayBox,
-                        backgroundColor: isCompleted ? '#4CAF50' : '#e0e0e0',
+                        backgroundColor: isCompleted ? '#00ff00' : 'transparent',
+                        boxShadow: isCompleted ? '0 0 5px #00ff00' : 'none',
                       }}
-                      title={`Giorno ${index + 1}: ${isCompleted ? 'Completato' : 'Non completato'}`}
+                      title={`Day ${index + 1}: ${isCompleted ? 'COMPLETED' : 'PENDING'}`}
                     />
                   );
                 })}

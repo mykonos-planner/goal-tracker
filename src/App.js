@@ -8,13 +8,20 @@ function App() {
   const [goals, setGoals] = useState([]);
   const [showAddGoal, setShowAddGoal] = useState(false);
   const [showDailyCheck, setShowDailyCheck] = useState(false);
-  const [viewMode, setViewMode] = useState('progress'); // 'progress' o 'calendar'
+  const [viewMode, setViewMode] = useState('progress');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showDeleteAll, setShowDeleteAll] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
     fetchGoals();
+    
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    
+    return () => clearInterval(timer);
   }, []);
 
   const fetchGoals = async () => {
@@ -188,22 +195,40 @@ function App() {
 
   const styles = {
     container: {
-      maxWidth: '1000px',
+      maxWidth: '1200px',
       margin: '0 auto',
       padding: '20px',
+      fontFamily: "'Courier New', monospace",
     },
     header: {
       textAlign: 'center',
-      color: 'white',
       marginBottom: '30px',
+      border: '1px solid #00ff00',
+      padding: '20px',
+      backgroundColor: 'rgba(0, 255, 0, 0.05)',
+      position: 'relative',
     },
     title: {
-      fontSize: '2.5em',
+      fontSize: '3em',
       marginBottom: '10px',
+      color: '#00ff00',
+      textShadow: '0 0 10px #00ff00, 0 0 20px #00ff00',
+      letterSpacing: '5px',
+      fontWeight: 'bold',
     },
     subtitle: {
       fontSize: '1.1em',
-      opacity: '0.9',
+      opacity: '0.8',
+      color: '#00ff00',
+      letterSpacing: '2px',
+    },
+    timestamp: {
+      position: 'absolute',
+      top: '10px',
+      right: '20px',
+      fontSize: '0.8em',
+      color: '#00ff00',
+      opacity: '0.7',
     },
     buttonContainer: {
       display: 'flex',
@@ -214,82 +239,86 @@ function App() {
     },
     button: {
       padding: '12px 24px',
-      fontSize: '16px',
-      border: 'none',
-      borderRadius: '8px',
+      fontSize: '14px',
+      border: '1px solid #00ff00',
+      borderRadius: '4px',
       cursor: 'pointer',
       fontWeight: 'bold',
-      transition: 'transform 0.2s, box-shadow 0.2s',
+      transition: 'all 0.3s',
+      backgroundColor: 'transparent',
+      color: '#00ff00',
+      letterSpacing: '1px',
+      textTransform: 'uppercase',
+      fontFamily: "'Courier New', monospace",
     },
     addButton: {
-      backgroundColor: '#4CAF50',
-      color: 'white',
+      borderColor: '#00ff00',
+      color: '#00ff00',
     },
     checkButton: {
-      backgroundColor: '#2196F3',
-      color: 'white',
+      borderColor: '#00ccff',
+      color: '#00ccff',
     },
     calendarButton: {
-      backgroundColor: '#9C27B0',
-      color: 'white',
+      borderColor: '#ff00ff',
+      color: '#ff00ff',
     },
     progressButton: {
-      backgroundColor: '#FF9800',
-      color: 'white',
+      borderColor: '#ff9900',
+      color: '#ff9900',
     },
     deleteAllButton: {
-      backgroundColor: '#ff4444',
-      color: 'white',
+      borderColor: '#ff4444',
+      color: '#ff4444',
     },
     errorMessage: {
-      backgroundColor: '#ff4444',
-      color: 'white',
+      backgroundColor: 'rgba(255, 0, 0, 0.1)',
+      color: '#ff4444',
       padding: '15px',
-      borderRadius: '8px',
+      borderRadius: '4px',
       marginBottom: '20px',
       textAlign: 'center',
+      border: '1px solid #ff4444',
     },
     loadingMessage: {
       textAlign: 'center',
-      color: 'white',
+      color: '#00ff00',
       fontSize: '18px',
       padding: '40px',
+      border: '1px solid #00ff00',
+      backgroundColor: 'rgba(0, 255, 0, 0.05)',
     },
     syncStatus: {
       textAlign: 'center',
-      color: 'white',
+      color: '#00ff00',
       fontSize: '12px',
       marginTop: '20px',
-      opacity: '0.8',
+      opacity: '0.6',
+      letterSpacing: '1px',
     },
     dangerZone: {
-      backgroundColor: '#fff3f3',
+      backgroundColor: 'rgba(255, 0, 0, 0.1)',
       padding: '20px',
-      borderRadius: '12px',
+      borderRadius: '4px',
       marginBottom: '30px',
-      border: '2px solid #ff4444',
+      border: '1px solid #ff4444',
     },
     dangerTitle: {
       color: '#ff4444',
       marginBottom: '15px',
       textAlign: 'center',
+      letterSpacing: '2px',
     },
-    viewToggle: {
-      display: 'flex',
-      justifyContent: 'center',
-      gap: '10px',
-      marginBottom: '30px',
-    }
   };
 
   if (loading && goals.length === 0) {
     return (
       <div style={styles.container}>
         <div style={styles.header}>
-          <h1 style={styles.title}>🎯 Goal Tracker</h1>
+          <h1 style={styles.title}>Organizer</h1>
         </div>
         <div style={styles.loadingMessage}>
-          <h2>Caricamento obiettivi...</h2>
+          <h2>Inizializzazione...</h2>
           <p>Connessione al database...</p>
         </div>
       </div>
@@ -299,8 +328,11 @@ function App() {
   return (
     <div style={styles.container}>
       <div style={styles.header}>
-        <h1 style={styles.title}>🎯 Goal Tracker</h1>
-        <p style={styles.subtitle}>Traccia i tuoi obiettivi quotidiani</p>
+        <h1 style={styles.title}>Organizer</h1>
+        <p style={styles.subtitle}>// Sistema di monitoraggio obiettivi</p>
+        <div style={styles.timestamp}>
+          {currentTime.toLocaleString('it-IT')}
+        </div>
       </div>
 
       {error && (
@@ -314,14 +346,15 @@ function App() {
             style={{
               marginTop: '10px',
               padding: '8px 16px',
-              backgroundColor: 'white',
+              backgroundColor: 'transparent',
               color: '#ff4444',
-              border: 'none',
+              border: '1px solid #ff4444',
               borderRadius: '4px',
               cursor: 'pointer',
+              fontFamily: "'Courier New', monospace",
             }}
           >
-            Riprova
+            [ RETRY ]
           </button>
         </div>
       )}
@@ -330,57 +363,97 @@ function App() {
         <button 
           style={{...styles.button, ...styles.addButton}}
           onClick={() => setShowAddGoal(!showAddGoal)}
+          onMouseEnter={(e) => {
+            e.target.style.backgroundColor = 'rgba(0, 255, 0, 0.1)';
+            e.target.style.boxShadow = '0 0 20px rgba(0, 255, 0, 0.3)';
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.backgroundColor = 'transparent';
+            e.target.style.boxShadow = 'none';
+          }}
         >
-          {showAddGoal ? '✕ Chiudi' : '➕ Nuovo Obiettivo'}
+          {showAddGoal ? '[ CLOSE ]' : '[ NEW TASK ]'}
         </button>
         
         <button 
           style={{...styles.button, ...styles.checkButton}}
           onClick={() => setShowDailyCheck(!showDailyCheck)}
+          onMouseEnter={(e) => {
+            e.target.style.backgroundColor = 'rgba(0, 204, 255, 0.1)';
+            e.target.style.boxShadow = '0 0 20px rgba(0, 204, 255, 0.3)';
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.backgroundColor = 'transparent';
+            e.target.style.boxShadow = 'none';
+          }}
         >
-          {showDailyCheck ? '✕ Chiudi' : '✓ Check Giornaliero'}
+          {showDailyCheck ? '[ CLOSE ]' : '[ DAILY CHECK ]'}
         </button>
 
         <button 
           style={{...styles.button, ...styles.progressButton}}
           onClick={() => setViewMode('progress')}
+          onMouseEnter={(e) => {
+            e.target.style.backgroundColor = 'rgba(255, 153, 0, 0.1)';
+            e.target.style.boxShadow = '0 0 20px rgba(255, 153, 0, 0.3)';
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.backgroundColor = 'transparent';
+            e.target.style.boxShadow = 'none';
+          }}
         >
-          📊 Vista Progressi
+          [ PROGRESS VIEW ]
         </button>
 
         <button 
           style={{...styles.button, ...styles.calendarButton}}
           onClick={() => setViewMode('calendar')}
+          onMouseEnter={(e) => {
+            e.target.style.backgroundColor = 'rgba(255, 0, 255, 0.1)';
+            e.target.style.boxShadow = '0 0 20px rgba(255, 0, 255, 0.3)';
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.backgroundColor = 'transparent';
+            e.target.style.boxShadow = 'none';
+          }}
         >
-          📅 Vista Calendario
+          [ CALENDAR VIEW ]
         </button>
 
         <button 
           style={{...styles.button, ...styles.deleteAllButton}}
           onClick={() => setShowDeleteAll(!showDeleteAll)}
+          onMouseEnter={(e) => {
+            e.target.style.backgroundColor = 'rgba(255, 68, 68, 0.1)';
+            e.target.style.boxShadow = '0 0 20px rgba(255, 68, 68, 0.3)';
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.backgroundColor = 'transparent';
+            e.target.style.boxShadow = 'none';
+          }}
         >
-          {showDeleteAll ? '✕ Annulla' : '🗑️ Elimina Tutto'}
+          {showDeleteAll ? '[ CANCEL ]' : '[ PURGE ALL ]'}
         </button>
       </div>
 
       {showDeleteAll && (
         <div style={styles.dangerZone}>
-          <h3 style={styles.dangerTitle}>⚠️ ZONA PERICOLOSA</h3>
-          <p style={{textAlign: 'center', marginBottom: '20px', color: '#666'}}>
-            Stai per eliminare tutti gli obiettivi. Questa azione non può essere annullata!
+          <h3 style={styles.dangerTitle}>⚠ WARNING: DESTRUCTIVE OPERATION</h3>
+          <p style={{textAlign: 'center', marginBottom: '20px', color: '#ff4444'}}>
+            This action will permanently delete all tasks. This cannot be undone!
           </p>
           <div style={{display: 'flex', justifyContent: 'center', gap: '10px'}}>
             <button 
               style={{...styles.button, ...styles.deleteAllButton}}
               onClick={deleteAllGoals}
             >
-              Conferma Eliminazione Totale
+              [ CONFIRM PURGE ]
             </button>
             <button 
-              style={{...styles.button, backgroundColor: '#666', color: 'white'}}
+              style={{...styles.button, borderColor: '#666', color: '#666'}}
               onClick={() => setShowDeleteAll(false)}
             >
-              Annulla
+              [ CANCEL ]
             </button>
           </div>
         </div>
@@ -404,8 +477,7 @@ function App() {
       )}
 
       <div style={styles.syncStatus}>
-        <p>💾 Dati sincronizzati con il database cloud</p>
-        <p>Obiettivi totali: {goals.length}</p>
+        <p>[ DATABASE SYNCED ] | [ TASKS: {goals.length} ]</p>
       </div>
     </div>
   );
