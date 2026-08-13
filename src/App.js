@@ -141,8 +141,6 @@ function App() {
     try {
       setLoading(true);
       
-      console.log('Chiamata delete-all API...');
-      
       const response = await fetch('/api/goals/delete-all', {
         method: 'POST',
         headers: {
@@ -151,10 +149,7 @@ function App() {
         body: JSON.stringify({ action: 'delete-all' }),
       });
       
-      console.log('Risposta delete-all:', response.status);
-      
       const responseData = await response.json().catch(() => ({}));
-      console.log('Dati risposta:', responseData);
       
       if (!response.ok) {
         throw new Error(responseData.error || 'Failed to delete all goals');
@@ -215,19 +210,22 @@ function App() {
     container: {
       maxWidth: '1200px',
       margin: '0 auto',
-      padding: isMobile ? '10px' : '20px',
+      padding: isMobile ? '5px' : '20px',
       fontFamily: "'Courier New', monospace",
       minHeight: '100vh',
+      width: '100%',
+      overflowX: 'hidden',
+      boxSizing: 'border-box',
     },
     header: {
       textAlign: 'center',
-      marginBottom: '20px',
-      padding: isMobile ? '15px' : '20px',
+      marginBottom: '15px',
+      padding: isMobile ? '10px' : '20px',
       borderBottom: '1px solid #00ff00',
       position: 'relative',
     },
     title: {
-      fontSize: isMobile ? '1.8em' : '2.5em',
+      fontSize: isMobile ? '1.5em' : '2.5em',
       marginBottom: '10px',
       color: '#00ff00',
       letterSpacing: '3px',
@@ -246,7 +244,7 @@ function App() {
       fontSize: '0.7em',
       color: '#00ff00',
       opacity: '0.6',
-      marginTop: isMobile ? '10px' : '0',
+      marginTop: isMobile ? '5px' : '0',
     },
     mainMenu: {
       display: 'flex',
@@ -262,7 +260,7 @@ function App() {
       cursor: 'pointer',
       transition: 'all 0.3s',
       textAlign: 'center',
-      minWidth: isMobile ? '150px' : '200px',
+      minWidth: isMobile ? '100%' : '200px',
       backgroundColor: 'rgba(0, 255, 0, 0.02)',
     },
     menuCardTitle: {
@@ -278,24 +276,21 @@ function App() {
     },
     toolbar: {
       display: 'flex',
-      justifyContent: 'center',
-      gap: '8px',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      gap: isMobile ? '5px' : '8px',
       marginBottom: '20px',
-      flexWrap: 'wrap',
-      padding: '10px',
+      flexWrap: 'nowrap',
+      padding: isMobile ? '8px' : '10px',
       backgroundColor: 'rgba(0, 255, 0, 0.02)',
       borderRadius: '4px',
       border: '1px solid rgba(0, 255, 0, 0.2)',
-    },
-    buttonGroup: {
-      display: 'flex',
-      gap: '8px',
-      alignItems: 'center',
-      flexWrap: 'wrap',
+      width: '100%',
+      boxSizing: 'border-box',
     },
     button: {
-      padding: isMobile ? '8px 15px' : '10px 20px',
-      fontSize: isMobile ? '10px' : '12px',
+      padding: isMobile ? '6px 8px' : '10px 20px',
+      fontSize: isMobile ? '8px' : '12px',
       border: '1px solid #00ff00',
       borderRadius: '4px',
       cursor: 'pointer',
@@ -303,14 +298,18 @@ function App() {
       transition: 'all 0.3s',
       backgroundColor: 'transparent',
       color: '#00ff00',
-      letterSpacing: '1px',
+      letterSpacing: '0.5px',
       textTransform: 'uppercase',
       fontFamily: "'Courier New', monospace",
       whiteSpace: 'nowrap',
+      flex: isMobile ? '1' : '0 0 auto',
+      minWidth: '0',
+      textAlign: 'center',
     },
     dropdownContainer: {
       position: 'relative',
       display: 'inline-block',
+      flex: isMobile ? '1' : '0 0 auto',
     },
     dropdownMenu: {
       position: 'absolute',
@@ -321,17 +320,17 @@ function App() {
       borderRadius: '4px',
       marginTop: '5px',
       zIndex: 1000,
-      minWidth: '200px',
+      minWidth: isMobile ? '120px' : '200px',
       boxShadow: '0 4px 6px rgba(0, 0, 0, 0.5)',
       overflow: 'hidden',
     },
     dropdownItem: {
-      padding: '12px 20px',
+      padding: isMobile ? '8px 10px' : '12px 20px',
       cursor: 'pointer',
       transition: 'all 0.3s',
       color: '#00ff00',
-      fontSize: '11px',
-      letterSpacing: '1px',
+      fontSize: isMobile ? '8px' : '11px',
+      letterSpacing: '0.5px',
       borderBottom: '1px solid rgba(0, 255, 0, 0.1)',
       whiteSpace: 'nowrap',
       display: 'block',
@@ -383,14 +382,14 @@ function App() {
     },
     backButton: {
       marginBottom: '15px',
-      padding: '8px 16px',
+      padding: isMobile ? '6px 12px' : '8px 16px',
       backgroundColor: 'transparent',
       color: '#00ff00',
       border: '1px solid #00ff00',
       borderRadius: '4px',
       cursor: 'pointer',
       fontFamily: "'Courier New', monospace",
-      fontSize: '11px',
+      fontSize: isMobile ? '10px' : '11px',
       letterSpacing: '1px',
     },
   };
@@ -496,19 +495,15 @@ function App() {
           style={{...styles.button, borderColor: '#00ff00'}}
           onClick={() => setShowAddGoal(!showAddGoal)}
         >
-          {showAddGoal ? '[CLOSE]' : '[NEW TASK]'}
+          {showAddGoal ? '[CLOSE]' : '[NEW]'}
         </button>
 
         <div style={styles.dropdownContainer}>
           <button 
-            style={{...styles.button, borderColor: '#ff9900'}}
+            style={{...styles.button, borderColor: '#ff9900', width: '100%'}}
             onClick={() => setShowViewMenu(!showViewMenu)}
           >
-            [VIEW: {
-              viewMode === 'progress' ? 'PROG' : 
-              viewMode === 'calendar' ? 'CAL' : 
-              'TODAY'
-            } ▼]
+            [VIEW]
           </button>
           {showViewMenu && (
             <div style={styles.dropdownMenu}>
@@ -518,10 +513,8 @@ function App() {
                   setViewMode('today');
                   setShowViewMenu(false);
                 }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(255, 153, 0, 0.1)'}
-                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
               >
-                [ TODAY VIEW ]
+                [ TODAY ]
               </button>
               <button 
                 style={styles.dropdownItem}
@@ -529,10 +522,8 @@ function App() {
                   setViewMode('progress');
                   setShowViewMenu(false);
                 }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(255, 153, 0, 0.1)'}
-                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
               >
-                [ PROGRESS VIEW ]
+                [ PROGRESS ]
               </button>
               <button 
                 style={styles.dropdownItem}
@@ -540,10 +531,8 @@ function App() {
                   setViewMode('calendar');
                   setShowViewMenu(false);
                 }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(255, 153, 0, 0.1)'}
-                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
               >
-                [ CALENDAR VIEW ]
+                [ CALENDAR ]
               </button>
             </div>
           )}
@@ -553,22 +542,22 @@ function App() {
           style={{...styles.button, borderColor: '#ff4444', color: '#ff4444'}}
           onClick={() => setShowDeleteAll(!showDeleteAll)}
         >
-          {showDeleteAll ? '[CANCEL]' : '[PURGE ALL]'}
+          {showDeleteAll ? '[CANCEL]' : '[PURGE]'}
         </button>
       </div>
 
       {showDeleteAll && (
         <div style={styles.dangerZone}>
-          <h3 style={styles.dangerTitle}>⚠ WARNING: DESTRUCTIVE OPERATION</h3>
+          <h3 style={styles.dangerTitle}>⚠ WARNING</h3>
           <p style={{textAlign: 'center', marginBottom: '15px', color: '#ff4444', fontSize: '11px'}}>
-            This action will permanently delete all tasks!
+            Delete all tasks permanently?
           </p>
           <div style={{display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap'}}>
             <button 
               style={{...styles.button, borderColor: '#ff4444', color: '#ff4444'}}
               onClick={deleteAllGoals}
             >
-              [ CONFIRM PURGE ]
+              [ CONFIRM ]
             </button>
             <button 
               style={{...styles.button, borderColor: '#666', color: '#666'}}

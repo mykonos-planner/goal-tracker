@@ -62,121 +62,132 @@ function CalendarView({ goals }) {
     container: {
       backgroundColor: 'rgba(0, 255, 0, 0.02)',
       borderRadius: '4px',
-      padding: '20px',
+      padding: '15px',
       border: '1px solid rgba(0, 255, 0, 0.3)',
       fontFamily: "'Courier New', monospace",
+      width: '100%',
+      boxSizing: 'border-box',
+      overflowX: 'hidden',
     },
     header: {
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'center',
-      marginBottom: '20px',
+      marginBottom: '15px',
+      gap: '10px',
     },
     monthTitle: {
-      fontSize: '1.2em',
+      fontSize: '1em',
       color: '#00ff00',
-      letterSpacing: '2px',
+      letterSpacing: '1px',
       fontWeight: 'normal',
+      textAlign: 'center',
+      flex: 1,
     },
     navButton: {
-      padding: '8px 16px',
+      padding: '6px 10px',
       backgroundColor: 'transparent',
       color: '#00ff00',
       border: '1px solid #00ff00',
       borderRadius: '4px',
       cursor: 'pointer',
-      fontSize: '16px',
+      fontSize: '14px',
       transition: 'all 0.3s',
       fontFamily: "'Courier New', monospace",
+      flexShrink: 0,
     },
     weekDays: {
       display: 'grid',
       gridTemplateColumns: 'repeat(7, 1fr)',
-      gap: '5px',
-      marginBottom: '10px',
+      gap: '2px',
+      marginBottom: '5px',
     },
     weekDay: {
       textAlign: 'center',
       color: '#00cc00',
-      padding: '10px',
+      padding: '5px',
       backgroundColor: 'rgba(0, 255, 0, 0.05)',
-      borderRadius: '4px',
-      fontSize: '11px',
-      letterSpacing: '1px',
+      borderRadius: '2px',
+      fontSize: '8px',
+      letterSpacing: '0.5px',
     },
     daysGrid: {
       display: 'grid',
       gridTemplateColumns: 'repeat(7, 1fr)',
-      gap: '5px',
+      gap: '2px',
     },
     dayCell: {
-      minHeight: '80px',
-      padding: '8px',
+      minHeight: '50px',
+      padding: '4px',
       backgroundColor: 'rgba(0, 255, 0, 0.02)',
-      borderRadius: '4px',
+      borderRadius: '2px',
       cursor: 'pointer',
       transition: 'all 0.3s',
       position: 'relative',
       border: '1px solid rgba(0, 255, 0, 0.1)',
+      overflow: 'hidden',
     },
     dayCellToday: {
-      minHeight: '80px',
-      padding: '8px',
+      minHeight: '50px',
+      padding: '4px',
       backgroundColor: 'rgba(0, 255, 0, 0.05)',
-      borderRadius: '4px',
+      borderRadius: '2px',
       cursor: 'pointer',
       transition: 'all 0.3s',
       position: 'relative',
       border: '1px solid #00ff00',
+      overflow: 'hidden',
     },
     dayCellSelected: {
-      minHeight: '80px',
-      padding: '8px',
+      minHeight: '50px',
+      padding: '4px',
       backgroundColor: 'rgba(0, 255, 0, 0.1)',
-      borderRadius: '4px',
+      borderRadius: '2px',
       cursor: 'pointer',
       transition: 'all 0.3s',
       position: 'relative',
       border: '1px solid #00ff00',
       boxShadow: '0 0 10px rgba(0, 255, 0, 0.2)',
+      overflow: 'hidden',
     },
     dayNumber: {
       color: '#00ff00',
-      marginBottom: '5px',
-      fontSize: '12px',
+      marginBottom: '3px',
+      fontSize: '10px',
+      fontWeight: 'bold',
     },
     goalsContainer: {
       display: 'flex',
       flexDirection: 'column',
-      gap: '2px',
+      gap: '1px',
     },
     goalBadge: {
-      padding: '2px 6px',
+      padding: '1px 3px',
       borderRadius: '2px',
-      fontSize: '9px',
+      fontSize: '6px',
       backgroundColor: 'rgba(255, 153, 0, 0.2)',
       color: '#ff9900',
       whiteSpace: 'nowrap',
       overflow: 'hidden',
       textOverflow: 'ellipsis',
       maxWidth: '100%',
-      letterSpacing: '0.5px',
+      letterSpacing: '0.3px',
     },
     goalBadgeCompleted: {
-      padding: '2px 6px',
+      padding: '1px 3px',
       borderRadius: '2px',
-      fontSize: '9px',
+      fontSize: '6px',
       backgroundColor: 'rgba(0, 255, 0, 0.2)',
       color: '#00ff00',
       whiteSpace: 'nowrap',
       overflow: 'hidden',
       textOverflow: 'ellipsis',
       maxWidth: '100%',
-      letterSpacing: '0.5px',
+      letterSpacing: '0.3px',
     },
     detailsPanel: {
-      marginTop: '20px',
-      padding: '15px',
+      marginTop: '15px',
+      padding: '10px',
       backgroundColor: 'rgba(0, 255, 0, 0.03)',
       borderRadius: '4px',
       border: '1px solid rgba(0, 255, 0, 0.2)',
@@ -184,11 +195,11 @@ function CalendarView({ goals }) {
     detailsTitle: {
       color: '#00ff00',
       marginBottom: '10px',
-      fontSize: '14px',
+      fontSize: '12px',
       letterSpacing: '1px',
     },
     goalItem: {
-      padding: '10px',
+      padding: '8px',
       marginBottom: '5px',
       backgroundColor: 'rgba(0, 255, 0, 0.03)',
       borderRadius: '4px',
@@ -196,16 +207,19 @@ function CalendarView({ goals }) {
       justifyContent: 'space-between',
       alignItems: 'center',
       border: '1px solid rgba(0, 255, 0, 0.1)',
+      gap: '10px',
     },
     completedIcon: {
       color: '#00ff00',
       fontWeight: 'bold',
-      fontSize: '12px',
+      fontSize: '10px',
+      flexShrink: 0,
     },
     pendingIcon: {
       color: '#ff9900',
       fontWeight: 'bold',
-      fontSize: '12px',
+      fontSize: '10px',
+      flexShrink: 0,
     },
   };
 
@@ -228,8 +242,6 @@ function CalendarView({ goals }) {
         <button 
           style={styles.navButton} 
           onClick={() => changeMonth(-1)}
-          onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(0, 255, 0, 0.1)'}
-          onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
         >
           ←
         </button>
@@ -239,8 +251,6 @@ function CalendarView({ goals }) {
         <button 
           style={styles.navButton} 
           onClick={() => changeMonth(1)}
-          onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(0, 255, 0, 0.1)'}
-          onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
         >
           →
         </button>
@@ -267,16 +277,10 @@ function CalendarView({ goals }) {
               key={index}
               style={isSelected ? styles.dayCellSelected : today ? styles.dayCellToday : styles.dayCell}
               onClick={() => setSelectedDate(date)}
-              onMouseEnter={(e) => {
-                if (!isSelected && !today) e.target.style.backgroundColor = 'rgba(0, 255, 0, 0.05)';
-              }}
-              onMouseLeave={(e) => {
-                if (!isSelected && !today) e.target.style.backgroundColor = 'rgba(0, 255, 0, 0.02)';
-              }}
             >
               <div style={styles.dayNumber}>{date.getDate()}</div>
               <div style={styles.goalsContainer}>
-                {goalsForDate.map(goal => {
+                {goalsForDate.slice(0, 3).map(goal => {
                   const goalId = goal.id || goal._id;
                   const completed = isDateCompleted(date, goalId);
                   return (
@@ -285,7 +289,7 @@ function CalendarView({ goals }) {
                       style={completed ? styles.goalBadgeCompleted : styles.goalBadge}
                       title={`${goal.name} - ${completed ? 'COMPLETED' : 'PENDING'}`}
                     >
-                      {completed ? '✓' : '•'} {goal.name.substring(0, 10)}
+                      {completed ? '✓' : '•'}
                     </span>
                   );
                 })}
@@ -305,16 +309,16 @@ function CalendarView({ goals }) {
             }).toUpperCase()} ]
           </h3>
           {getGoalsForDate(selectedDate).length === 0 ? (
-            <p style={{color: '#00cc00', fontSize: '12px'}}>No tasks scheduled for this day</p>
+            <p style={{color: '#00cc00', fontSize: '11px'}}>No tasks scheduled</p>
           ) : (
             getGoalsForDate(selectedDate).map(goal => {
               const goalId = goal.id || goal._id;
               const completed = isDateCompleted(selectedDate, goalId);
               return (
                 <div key={goalId} style={styles.goalItem}>
-                  <span style={{color: '#00ff00', fontSize: '13px'}}>{goal.name}</span>
+                  <span style={{color: '#00ff00', fontSize: '11px', flex: 1}}>{goal.name}</span>
                   <span style={completed ? styles.completedIcon : styles.pendingIcon}>
-                    {completed ? '[COMPLETED]' : '[PENDING]'}
+                    {completed ? '[DONE]' : '[PEND]'}
                   </span>
                 </div>
               );
