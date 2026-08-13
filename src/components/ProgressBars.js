@@ -2,18 +2,23 @@ import React from 'react';
 
 function ProgressBars({ goals, onDeleteGoal }) {
   const getProgress = (goal) => {
-    const daysCompleted = goal.dailyHistory.length;
+    const daysCompleted = goal.dailyHistory ? goal.dailyHistory.length : 0;
     const progressPercent = Math.min((daysCompleted / goal.duration) * 100, 100);
     return progressPercent;
   };
 
   const getDaysRemaining = (goal) => {
-    const daysCompleted = goal.dailyHistory.length;
+    const daysCompleted = goal.dailyHistory ? goal.dailyHistory.length : 0;
     return Math.max(goal.duration - daysCompleted, 0);
   };
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('it-IT');
+    if (!dateString) return 'Data non disponibile';
+    try {
+      return new Date(dateString).toLocaleDateString('it-IT');
+    } catch (error) {
+      return 'Data non valida';
+    }
   };
 
   const styles = {
@@ -74,6 +79,8 @@ function ProgressBars({ goals, onDeleteGoal }) {
       justifyContent: 'space-between',
       color: '#666',
       fontSize: '14px',
+      flexWrap: 'wrap',
+      gap: '10px',
     },
     historyContainer: {
       marginTop: '15px',
@@ -107,7 +114,8 @@ function ProgressBars({ goals, onDeleteGoal }) {
     }
   };
 
-  if (goals.length === 0) {
+  // Controllo se goals è un array valido
+  if (!Array.isArray(goals) || goals.length === 0) {
     return (
       <div style={styles.emptyMessage}>
         <h3>🎯 Nessun obiettivo ancora</h3>
@@ -119,16 +127,23 @@ function ProgressBars({ goals, onDeleteGoal }) {
   return (
     <div style={styles.container}>
       {goals.map(goal => {
+        // Controllo che goal esista e abbia le proprietà necessarie
+        if (!goal || !goal.id) {
+          return null;
+        }
+
         const progress = getProgress(goal);
         const daysRemaining = getDaysRemaining(goal);
+        const dailyHistory = goal.dailyHistory || [];
+        const duration = goal.duration || 0;
         
         return (
-          <div key={goal.id} style={styles.goalCard}>
+          <div key={goal.id || Math.random()} style={styles.goalCard}>
             <div style={styles.goalHeader}>
-              <div style={styles.goalName}>{goal.name}</div>
+              <div style={styles.goalName}>{goal.name || 'Obiettivo senza nome'}</div>
               <button 
                 style={styles.deleteButton}
-                onClick={() => onDeleteGoal(goal.id)}
+                onClick={() => onDeleteGoal(goal.id || goal._id)}
                 onMouseEnter={(e) => e.target.style.backgroundColor = '#cc0000'}
                 onMouseLeave={(e) => e.target.style.backgroundColor = '#ff4444'}
               >
@@ -147,20 +162,20 @@ function ProgressBars({ goals, onDeleteGoal }) {
             
             <div style={styles.info}>
               <span>Iniziato: {formatDate(goal.startDate)}</span>
-              <span>Durata: {goal.duration} giorni</span>
+              <span>Durata: {duration} giorni</span>
               <span>Rimanenti: {daysRemaining} giorni</span>
             </div>
 
             <div style={styles.historyContainer}>
               <div style={styles.historyTitle}>
-                Storico completamenti ({goal.dailyHistory.length}/{goal.duration} giorni)
+                Storico completamenti ({dailyHistory.length}/{duration} giorni)
               </div>
               <div style={styles.daysGrid}>
-                {Array.from({ length: goal.duration }, (_, index) => {
-                  const dayDate = new Date(goal.startDate);
+                {Array.from({ length: duration }, (_, index) => {
+                  const dayDate = new Date(goal.startDate || new Date());
                   dayDate.setDate(dayDate.getDate() + index);
                   const dateString = dayDate.toDateString();
-                  const isCompleted = goal.dailyHistory.includes(dateString);
+                  const isCompleted = dailyHistory.includes(dateString);
                   
                   return (
                     <div

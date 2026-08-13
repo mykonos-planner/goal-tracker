@@ -24,19 +24,34 @@ function App() {
   }, []);
 
   const fetchGoals = async () => {
-    try {
-      const response = await fetch('/api/goals');
-      if (!response.ok) throw new Error('Failed to fetch goals');
-      const data = await response.json();
-      setGoals(data);
-      setError(null);
-    } catch (err) {
-      console.error('Error fetching goals:', err);
-      setError('Errore nel caricamento degli obiettivi dal database');
-    } finally {
-      setLoading(false);
-    }
-  };
+  try {
+    const response = await fetch('/api/goals');
+    if (!response.ok) throw new Error('Failed to fetch goals');
+    const data = await response.json();
+    
+    // Assicurati che data sia un array
+    const goalsArray = Array.isArray(data) ? data : [];
+    
+    // Normalizza i dati per assicurarti che abbiano le proprietà necessarie
+    const normalizedGoals = goalsArray.map(goal => ({
+      ...goal,
+      id: goal.id || goal._id || `goal_${Date.now()}`,
+      dailyHistory: goal.dailyHistory || [],
+      checkedToday: goal.checkedToday || false,
+      duration: goal.duration || 0,
+      name: goal.name || 'Obiettivo senza nome',
+      startDate: goal.startDate || new Date().toISOString(),
+    }));
+    
+    setGoals(normalizedGoals);
+    setError(null);
+  } catch (err) {
+    console.error('Error fetching goals:', err);
+    setError('Errore nel caricamento degli obiettivi dal database');
+  } finally {
+    setLoading(false);
+  }
+};
 
   const addGoal = async (newGoal) => {
     try {

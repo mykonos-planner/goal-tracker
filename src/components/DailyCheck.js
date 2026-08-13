@@ -49,7 +49,8 @@ function DailyCheck({ goals, onToggleCheck }) {
     }
   };
 
-  if (goals.length === 0) {
+  // Controllo se goals è un array valido
+  if (!Array.isArray(goals) || goals.length === 0) {
     return (
       <div style={styles.container}>
         <p style={styles.emptyMessage}>
@@ -62,34 +63,44 @@ function DailyCheck({ goals, onToggleCheck }) {
   return (
     <div style={styles.container}>
       <h2 style={styles.header}>📅 Check Giornaliero - {today}</h2>
-      {goals.map(goal => (
-        <div
-          key={goal.id}
-          style={{
-            ...styles.goalItem,
-            backgroundColor: goal.checkedToday ? '#e8f5e9' : '#f5f5f5'
-          }}
-          onClick={() => onToggleCheck(goal.id)}
-          onMouseEnter={(e) => {
-            if (!goal.checkedToday) e.target.style.backgroundColor = '#e3f2fd';
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.backgroundColor = goal.checkedToday ? '#e8f5e9' : '#f5f5f5';
-          }}
-        >
-          <input
-            type="checkbox"
-            checked={goal.checkedToday}
-            onChange={() => onToggleCheck(goal.id)}
-            style={styles.checkbox}
-            onClick={(e) => e.stopPropagation()}
-          />
-          <span style={styles.goalName}>{goal.name}</span>
-          <span style={{ color: goal.checkedToday ? '#4CAF50' : '#999' }}>
-            {goal.checkedToday ? '✓ Completato' : 'Da fare'}
-          </span>
-        </div>
-      ))}
+      {goals.map(goal => {
+        // Controllo che goal esista
+        if (!goal || (!goal.id && !goal._id)) {
+          return null;
+        }
+        
+        const goalId = goal.id || goal._id;
+        const isChecked = goal.checkedToday || false;
+        
+        return (
+          <div
+            key={goalId}
+            style={{
+              ...styles.goalItem,
+              backgroundColor: isChecked ? '#e8f5e9' : '#f5f5f5'
+            }}
+            onClick={() => onToggleCheck(goalId, !isChecked)}
+            onMouseEnter={(e) => {
+              if (!isChecked) e.target.style.backgroundColor = '#e3f2fd';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = isChecked ? '#e8f5e9' : '#f5f5f5';
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={isChecked}
+              onChange={() => onToggleCheck(goalId, !isChecked)}
+              style={styles.checkbox}
+              onClick={(e) => e.stopPropagation()}
+            />
+            <span style={styles.goalName}>{goal.name || 'Obiettivo senza nome'}</span>
+            <span style={{ color: isChecked ? '#4CAF50' : '#999' }}>
+              {isChecked ? '✓ Completato' : 'Da fare'}
+            </span>
+          </div>
+        );
+      })}
     </div>
   );
 }
