@@ -21,6 +21,21 @@ function ProgressBars({ goals, onDeleteGoal }) {
     }
   };
 
+  const getFrequencyLabel = (goal) => {
+    switch (goal.frequency) {
+      case 'daily':
+        return 'Ogni giorno';
+      case 'alternate':
+        return '1 giorno sì, 1 no';
+      case 'weekly':
+        const days = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'];
+        const selectedDays = (goal.frequencyDays || []).map(d => days[d]);
+        return `Ogni: ${selectedDays.join(', ')}`;
+      default:
+        return 'Ogni giorno';
+    }
+  };
+
   const styles = {
     container: {
       display: 'grid',
@@ -42,6 +57,15 @@ function ProgressBars({ goals, onDeleteGoal }) {
       fontSize: '18px',
       fontWeight: 'bold',
       color: '#333',
+    },
+    goalFrequency: {
+      fontSize: '12px',
+      color: '#666',
+      backgroundColor: '#e0e0e0',
+      padding: '4px 8px',
+      borderRadius: '12px',
+      display: 'inline-block',
+      marginLeft: '10px',
     },
     deleteButton: {
       backgroundColor: '#ff4444',
@@ -114,7 +138,6 @@ function ProgressBars({ goals, onDeleteGoal }) {
     }
   };
 
-  // Controllo se goals è un array valido
   if (!Array.isArray(goals) || goals.length === 0) {
     return (
       <div style={styles.emptyMessage}>
@@ -127,7 +150,6 @@ function ProgressBars({ goals, onDeleteGoal }) {
   return (
     <div style={styles.container}>
       {goals.map(goal => {
-        // Controllo che goal esista e abbia le proprietà necessarie
         if (!goal || !goal.id) {
           return null;
         }
@@ -141,7 +163,12 @@ function ProgressBars({ goals, onDeleteGoal }) {
         return (
           <div key={goalId || Math.random()} style={styles.goalCard}>
             <div style={styles.goalHeader}>
-              <div style={styles.goalName}>{goal.name || 'Obiettivo senza nome'}</div>
+              <div>
+                <span style={styles.goalName}>{goal.name || 'Obiettivo senza nome'}</span>
+                <span style={styles.goalFrequency}>
+                  {getFrequencyLabel(goal)}
+                </span>
+              </div>
               <button 
                 style={styles.deleteButton}
                 onClick={() => onDeleteGoal(goalId)}
@@ -164,6 +191,7 @@ function ProgressBars({ goals, onDeleteGoal }) {
             <div style={styles.info}>
               <span>Iniziato: {formatDate(goal.startDate)}</span>
               <span>Durata: {duration} giorni</span>
+              <span>Completati: {dailyHistory.length} giorni</span>
               <span>Rimanenti: {daysRemaining} giorni</span>
             </div>
 

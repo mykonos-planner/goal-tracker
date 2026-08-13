@@ -26,13 +26,16 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'Configurazione Upstash mancante' });
     }
 
-    console.log('Toggle check:', { goalId, checked });
+    console.log('Toggle check giornaliero:', { goalId, checked });
 
     // Recupera l'obiettivo
-    const getResponse = await fetch(`${url}/hget/goals/${goalId}`, {
+    const getResponse = await fetch(url, {
+      method: 'POST',
       headers: {
-        'Authorization': `Bearer ${token}`
-      }
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(["HGET", "goals", goalId])
     });
 
     if (!getResponse.ok) {
@@ -54,29 +57,47 @@ export default async function handler(req, res) {
 
     const goal = JSON.parse(goalData);
     const today = new Date().toDateString();
+    
+    // Assicurati che dailyHistory sia un array
     let dailyHistory = Array.isArray(goal.dailyHistory) ? [...goal.dailyHistory] : [];
+    
+    console.log('Storico attuale:', dailyHistory);
+    console.log('Oggi:', today);
 
-    if (checked && !dailyHistory.includes(today)) {
-      dailyHistory.push(today);
-    } else if (!checked) {
+    if (checked) {
+      // Aggiungi oggi allo storico se non è già presente
+      if (!dailyHistory.includes(today)) {
+        dailyHistory.push(today);
+        console.log('Aggiunto oggi allo storico');
+      }
+    } else {
+      // Rimuovi oggi dallo storico
       dailyHistory = dailyHistory.filter(date => date !== today);
+      console.log('Rimosso oggi dallo storico');
     }
 
+    // L'obiettivo NON è mai "completato" completamente finché non raggiunge la durata
     const updatedGoal = {
       ...goal,
       checkedToday: checked,
-      dailyHistory,
+      dailyHistory: dailyHistory,
       updatedAt: new Date().toISOString()
     };
 
+    console.log('Obiettivo aggiornato:', {
+      name: updatedGoal.name,
+      dailyHistoryLength: dailyHistory.length,
+      checkedToday: checked
+    });
+
     // Salva l'obiettivo aggiornato
-    const updateResponse = await fetch(`${url}/hset/goals/${goalId}`, {
+    const updateResponse = await fetch(url, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       },
-      body: JSON.stringify(JSON.stringify(updatedGoal))
+      body: JSON.stringify(["HSET", "goals", goalId, JSON.stringify(updatedGoal)])
     });
 
     if (!updateResponse.ok) {
@@ -89,7 +110,7 @@ export default async function handler(req, res) {
       });
     }
 
-    console.log('Goal aggiornato con successo');
+    console.log('Check giornaliero salvato con successo');
     return res.status(200).json(updatedGoal);
 
   } catch (error) {

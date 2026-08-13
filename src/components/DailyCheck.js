@@ -1,7 +1,10 @@
 import React from 'react';
 
 function DailyCheck({ goals, onToggleCheck }) {
-  const today = new Date().toLocaleDateString('it-IT', {
+  const today = new Date();
+  const todayString = today.toDateString();
+  
+  const todayFormatted = today.toLocaleDateString('it-IT', {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
@@ -42,10 +45,21 @@ function DailyCheck({ goals, onToggleCheck }) {
       color: '#333',
       flex: 1,
     },
+    goalInfo: {
+      fontSize: '12px',
+      color: '#666',
+      marginLeft: '10px',
+    },
     emptyMessage: {
       textAlign: 'center',
       color: '#999',
       padding: '20px',
+    },
+    completedToday: {
+      backgroundColor: '#e8f5e9',
+    },
+    notCompletedToday: {
+      backgroundColor: '#f5f5f5',
     }
   };
 
@@ -60,43 +74,52 @@ function DailyCheck({ goals, onToggleCheck }) {
     );
   }
 
+  const isCompletedToday = (goal) => {
+    return goal.checkedToday === true || 
+           (Array.isArray(goal.dailyHistory) && goal.dailyHistory.includes(todayString));
+  };
+
   return (
     <div style={styles.container}>
-      <h2 style={styles.header}>📅 Check Giornaliero - {today}</h2>
+      <h2 style={styles.header}>📅 Check Giornaliero - {todayFormatted}</h2>
       {goals.map(goal => {
-        // Controllo che goal esista
         if (!goal || (!goal.id && !goal._id)) {
           return null;
         }
         
         const goalId = goal.id || goal._id;
-        const isChecked = goal.checkedToday || false;
+        const completed = isCompletedToday(goal);
+        const dailyHistory = Array.isArray(goal.dailyHistory) ? goal.dailyHistory : [];
         
         return (
           <div
             key={goalId}
             style={{
               ...styles.goalItem,
-              backgroundColor: isChecked ? '#e8f5e9' : '#f5f5f5'
+              ...(completed ? styles.completedToday : styles.notCompletedToday)
             }}
-            onClick={() => onToggleCheck(goalId, !isChecked)}
+            onClick={() => onToggleCheck(goalId, !completed)}
             onMouseEnter={(e) => {
-              if (!isChecked) e.target.style.backgroundColor = '#e3f2fd';
+              if (!completed) e.target.style.backgroundColor = '#e3f2fd';
             }}
             onMouseLeave={(e) => {
-              e.target.style.backgroundColor = isChecked ? '#e8f5e9' : '#f5f5f5';
+              e.target.style.backgroundColor = completed ? '#e8f5e9' : '#f5f5f5';
             }}
           >
             <input
               type="checkbox"
-              checked={isChecked}
-              onChange={() => onToggleCheck(goalId, !isChecked)}
+              checked={completed}
+              onChange={() => onToggleCheck(goalId, !completed)}
               style={styles.checkbox}
               onClick={(e) => e.stopPropagation()}
             />
-            <span style={styles.goalName}>{goal.name || 'Obiettivo senza nome'}</span>
-            <span style={{ color: isChecked ? '#4CAF50' : '#999' }}>
-              {isChecked ? '✓ Completato' : 'Da fare'}
+            <span style={styles.goalName}>
+              {goal.name || 'Obiettivo senza nome'}
+            </span>
+            <span style={styles.goalInfo}>
+              {completed 
+                ? '✓ Completato oggi' 
+                : `Da fare (${dailyHistory.length}/${goal.duration || 0} giorni completati)`}
             </span>
           </div>
         );
