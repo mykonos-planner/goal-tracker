@@ -88,45 +88,46 @@ function App() {
   };
 
   const deleteGoal = async (goalId) => {
-    try {
-      console.log('Tentativo eliminazione goal:', goalId);
-      
-      // Usa encodeURIComponent per gestire caratteri speciali nell'ID
-      const encodedId = encodeURIComponent(goalId);
-      console.log('URL eliminazione:', `/api/goals/${encodedId}`);
-      
-      const response = await fetch(`/api/goals/${encodedId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      console.log('Risposta eliminazione:', response.status);
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('Errore eliminazione:', errorData);
-        throw new Error(errorData.error || 'Failed to delete goal');
-      }
-      
-      // Aggiorna lo stato locale
-      setGoals(prevGoals => prevGoals.filter(goal => {
-        const goalIdToCheck = goal.id || goal._id;
-        return goalIdToCheck !== goalId;
-      }));
-      
-      setError(null);
-      
-      // Ricarica dal server per sincronizzare
-      await fetchGoals();
-      
-    } catch (err) {
-      console.error('Error deleting goal:', err);
-      setError('Errore nell\'eliminazione dell\'obiettivo');
-      alert('Errore nell\'eliminazione dell\'obiettivo: ' + err.message);
+  try {
+    console.log('Tentativo eliminazione goal:', goalId);
+    
+    // Usa encodeURIComponent per gestire caratteri speciali nell'ID
+    const encodedId = encodeURIComponent(goalId);
+    
+    // Usa POST invece di DELETE per l'eliminazione
+    const response = await fetch(`/api/goals/${encodedId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ action: 'delete' }),
+    });
+    
+    console.log('Risposta eliminazione:', response.status);
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('Errore eliminazione:', errorData);
+      throw new Error(errorData.error || 'Failed to delete goal');
     }
-  };
+    
+    // Aggiorna lo stato locale
+    setGoals(prevGoals => prevGoals.filter(goal => {
+      const goalIdToCheck = goal.id || goal._id;
+      return goalIdToCheck !== goalId;
+    }));
+    
+    setError(null);
+    
+    // Ricarica dal server per sincronizzare
+    await fetchGoals();
+    
+  } catch (err) {
+    console.error('Error deleting goal:', err);
+    setError('Errore nell\'eliminazione dell\'obiettivo');
+    alert('Errore nell\'eliminazione dell\'obiettivo: ' + err.message);
+  }
+};
 
   const toggleTodayCheck = async (goalId, checked) => {
     try {

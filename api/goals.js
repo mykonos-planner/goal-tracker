@@ -17,11 +17,16 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'GET') {
-      // Recupera tutti gli obiettivi
-      const response = await fetch(`${url}/hgetall/goals`, {
+      console.log('Recupero obiettivi...');
+      
+      // Usa il formato POST con comando Redis
+      const response = await fetch(url, {
+        method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(["HGETALL", "goals"])
       });
 
       if (!response.ok) {
@@ -35,6 +40,8 @@ export default async function handler(req, res) {
       }
 
       const data = await response.json();
+      console.log('Risposta Upstash:', data);
+      
       const result = data.result || data;
       const goals = [];
 
@@ -51,11 +58,14 @@ export default async function handler(req, res) {
       }
 
       goals.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      console.log('Goals recuperati:', goals.length);
       return res.status(200).json(goals);
     }
 
     if (req.method === 'POST') {
       const { name, duration } = req.body;
+      
+      console.log('Creazione goal:', { name, duration });
       
       if (!name || !duration) {
         return res.status(400).json({ error: 'Dati mancanti' });
@@ -72,14 +82,14 @@ export default async function handler(req, res) {
         createdAt: new Date().toISOString()
       };
 
-      // Salva su Upstash
-      const saveResponse = await fetch(`${url}/hset/goals/${goalId}`, {
+      // Salva su Upstash usando HSET
+      const saveResponse = await fetch(url, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(JSON.stringify(newGoal))
+        body: JSON.stringify(["HSET", "goals", goalId, JSON.stringify(newGoal)])
       });
 
       if (!saveResponse.ok) {
@@ -91,6 +101,9 @@ export default async function handler(req, res) {
           details: errorText
         });
       }
+
+      const saveData = await saveResponse.json();
+      console.log('Risposta salvataggio:', saveData);
 
       return res.status(201).json(newGoal);
     }
