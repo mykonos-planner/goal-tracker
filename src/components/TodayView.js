@@ -2,6 +2,7 @@ import React from 'react';
 
 function TodayView({ goals, onToggleCheck }) {
   const today = new Date();
+  today.setHours(0, 0, 0, 0); // Imposta a mezzanotte per confronto corretto
   const todayString = today.toDateString();
   
   const todayFormatted = today.toLocaleDateString('it-IT', {
@@ -12,13 +13,27 @@ function TodayView({ goals, onToggleCheck }) {
   });
 
   const shouldDoGoalToday = (goal) => {
-    const goalStartDate = new Date(goal.startDate);
-    const daysSinceStart = Math.floor((today - goalStartDate) / (1000 * 60 * 60 * 24));
-    
-    if (daysSinceStart < 0 || daysSinceStart >= goal.duration) {
+    if (!goal.startDate) {
       return false;
     }
     
+    const goalStartDate = new Date(goal.startDate);
+    goalStartDate.setHours(0, 0, 0, 0); // Imposta a mezzanotte per confronto corretto
+    
+    // Se l'obiettivo inizia dopo oggi, non mostrarlo
+    if (goalStartDate > today) {
+      return false;
+    }
+    
+    // Calcola i giorni trascorsi dall'inizio
+    const daysSinceStart = Math.floor((today - goalStartDate) / (1000 * 60 * 60 * 24));
+    
+    // Se l'obiettivo è già finito, non mostrarlo
+    if (daysSinceStart >= goal.duration) {
+      return false;
+    }
+    
+    // Controlla la frequenza
     switch (goal.frequency) {
       case 'daily':
         return true;
@@ -147,7 +162,28 @@ function TodayView({ goals, onToggleCheck }) {
       transition: 'width 0.5s ease-in-out',
       borderRadius: '2px',
     },
+    futureGoalsMessage: {
+      marginTop: '20px',
+      padding: '10px',
+      backgroundColor: 'rgba(0, 204, 255, 0.05)',
+      borderRadius: '4px',
+      border: '1px solid rgba(0, 204, 255, 0.2)',
+      textAlign: 'center',
+    },
+    futureGoalsText: {
+      color: '#00ccff',
+      fontSize: '11px',
+      letterSpacing: '1px',
+    },
   };
+
+  // Separa gli obiettivi di oggi da quelli futuri
+  const futureGoals = goals.filter(goal => {
+    if (!goal.startDate) return false;
+    const goalStartDate = new Date(goal.startDate);
+    goalStartDate.setHours(0, 0, 0, 0);
+    return goalStartDate > today;
+  });
 
   if (todaysGoals.length === 0) {
     return (
@@ -158,6 +194,14 @@ function TodayView({ goals, onToggleCheck }) {
         <p style={styles.emptyMessage}>
           [ NO TASKS SCHEDULED FOR TODAY ]
         </p>
+        
+        {futureGoals.length > 0 && (
+          <div style={styles.futureGoalsMessage}>
+            <p style={styles.futureGoalsText}>
+              [ {futureGoals.length} TASKS SCHEDULED FOR FUTURE DATES ]
+            </p>
+          </div>
+        )}
       </div>
     );
   }
@@ -224,6 +268,14 @@ function TodayView({ goals, onToggleCheck }) {
           }} />
         </div>
       </div>
+      
+      {futureGoals.length > 0 && (
+        <div style={styles.futureGoalsMessage}>
+          <p style={styles.futureGoalsText}>
+            [ {futureGoals.length} TASKS SCHEDULED FOR FUTURE DATES ]
+          </p>
+        </div>
+      )}
     </div>
   );
 }
