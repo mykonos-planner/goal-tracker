@@ -13,7 +13,7 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
   const [editingGroup, setEditingGroup] = useState(null);
   const [nodePositions, setNodePositions] = useState({});
   const [groupLabelPositions, setGroupLabelPositions] = useState({});
-  const [zoomLevel, setZoomLevel] = useState(0.7);
+  const [zoomLevel, setZoomLevel] = useState(0.5);
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
@@ -31,10 +31,8 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
       setIsMobile(mobile);
       if (mobile) {
         setCanvasSize({ width: 800, height: 600 });
-        setZoomLevel(0.5);
       } else {
         setCanvasSize({ width: 1600, height: 1000 });
-        setZoomLevel(0.7);
       }
     };
     
@@ -49,8 +47,8 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
   }, [nodePositions]);
 
   useEffect(() => {
-    const centerX = canvasSize.width / 2;
-    const centerY = canvasSize.height / 2;
+    const centerX = 800;
+    const centerY = 500;
     
     const initialNodes = [
       { 
@@ -60,13 +58,13 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
         label: 'ME', 
         type: 'me', 
         color: '#00ff00',
-        radius: isMobile ? 25 : 30,
+        radius: 30,
         pulse: 0,
       },
       ...people.map((person, index) => {
         const savedPosition = nodePositions[person.id];
         const angle = (index / people.length) * 2 * Math.PI;
-        const radius = isMobile ? 200 : 350;
+        const radius = 350;
         return {
           id: person.id,
           x: savedPosition?.x || centerX + radius * Math.cos(angle),
@@ -74,7 +72,7 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
           label: person.name + ' ' + person.surname,
           type: person.relationship,
           color: getRelationshipColor(person.relationship),
-          radius: isMobile ? 20 : 25,
+          radius: 25,
           pulse: Math.random() * Math.PI * 2,
           personData: person,
         };
@@ -82,7 +80,7 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     ];
     
     setNodes(initialNodes);
-  }, [people, canvasSize, nodePositions, isMobile]);
+  }, [people, nodePositions]);
 
   useEffect(() => {
     const animate = () => {
@@ -207,9 +205,17 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
       [group.id]: { x: labelX, y: labelY }
     }));
     
-    ctx.fillStyle = isSelected ? '#ffffff' : '#00ccff';
-    ctx.font = isMobile ? 'bold 14px Courier New' : 'bold 16px Courier New';
+    // Testo con sfondo per migliore leggibilità
+    const fontSize = 16 / zoomLevel;
+    ctx.font = 'bold ' + fontSize + 'px Courier New';
     ctx.textAlign = 'center';
+    
+    // Sfondo del testo
+    const textWidth = ctx.measureText(group.name).width;
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+    ctx.fillRect(labelX - textWidth/2 - 5, labelY - fontSize/2 - 5, textWidth + 10, fontSize + 10);
+    
+    ctx.fillStyle = isSelected ? '#ffffff' : '#00ccff';
     ctx.fillText(group.name, labelX, labelY);
   };
 
@@ -217,17 +223,17 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     ctx.strokeStyle = 'rgba(0, 255, 0, 0.03)';
     ctx.lineWidth = 1;
     
-    for (let x = 0; x < canvasSize.width; x += 50) {
+    for (let x = 0; x < 1600; x += 50) {
       ctx.beginPath();
       ctx.moveTo(x, 0);
-      ctx.lineTo(x, canvasSize.height);
+      ctx.lineTo(x, 1000);
       ctx.stroke();
     }
     
-    for (let y = 0; y < canvasSize.height; y += 50) {
+    for (let y = 0; y < 1000; y += 50) {
       ctx.beginPath();
       ctx.moveTo(0, y);
-      ctx.lineTo(canvasSize.width, y);
+      ctx.lineTo(1600, y);
       ctx.stroke();
     }
   };
@@ -302,20 +308,27 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     
     ctx.shadowBlur = 0;
     
-    ctx.fillStyle = '#ffffff';
-    ctx.font = node.type === 'me' 
-      ? (isMobile ? 'bold 16px Courier New' : 'bold 18px Courier New')
-      : (isMobile ? '12px Courier New' : '14px Courier New');
+    // Testo con dimensione che si adatta allo zoom
+    const fontSize = (node.type === 'me' ? 18 : 14) / zoomLevel;
+    ctx.font = (node.type === 'me' ? 'bold ' : '') + fontSize + 'px Courier New';
     ctx.textAlign = 'center';
-    ctx.fillText(node.label, node.x, node.y - node.radius - (isMobile ? 15 : 20));
+    
+    // Sfondo del testo per migliore leggibilità
+    const textWidth = ctx.measureText(node.label).width;
+    const textY = node.y - node.radius - 20;
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+    ctx.fillRect(node.x - textWidth/2 - 5, textY - fontSize/2 - 5, textWidth + 10, fontSize + 10);
+    
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(node.label, node.x, textY);
   };
 
   const drawParticles = (ctx) => {
     const numParticles = isMobile ? 15 : 30;
     
     for (let i = 0; i < numParticles; i++) {
-      const x = (Math.sin(animationFrame * 0.01 + i * 2) * 0.5 + 0.5) * canvasSize.width;
-      const y = (Math.cos(animationFrame * 0.015 + i * 3) * 0.5 + 0.5) * canvasSize.height;
+      const x = (Math.sin(animationFrame * 0.01 + i * 2) * 0.5 + 0.5) * 1600;
+      const y = (Math.cos(animationFrame * 0.015 + i * 3) * 0.5 + 0.5) * 1000;
       
       ctx.beginPath();
       ctx.arc(x, y, 1.5, 0, 2 * Math.PI);
@@ -598,7 +611,7 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
       color: '#666',
       fontSize: isMobile ? '9px' : '10px',
       letterSpacing: '1px',
-      fontFamily: "'Courier New', monospace",
+      fontFamily: "'Courier New', monospace',
       transition: 'all 0.3s',
     },
   };
@@ -623,16 +636,12 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
         <button 
           style={styles.zoomButton}
           onClick={() => handleZoom(0.1)}
-          onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(0, 255, 0, 0.2)'}
-          onMouseLeave={(e) => e.target.style.backgroundColor = 'rgba(0, 0, 0, 0.8)'}
         >
           +
         </button>
         <button 
           style={styles.zoomButton}
           onClick={() => handleZoom(-0.1)}
-          onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(0, 255, 0, 0.2)'}
-          onMouseLeave={(e) => e.target.style.backgroundColor = 'rgba(0, 0, 0, 0.8)'}
         >
           -
         </button>
