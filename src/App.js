@@ -468,7 +468,7 @@ function App() {
   }
 
   if (currentSection === 'network') {
-    return <NetworkView />;
+    return <NetworkView onBack={() => setCurrentSection('home')} />;
   }
 
   return (

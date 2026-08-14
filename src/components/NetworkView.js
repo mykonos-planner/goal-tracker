@@ -3,17 +3,27 @@ import NetworkGraph from './NetworkGraph';
 import PersonForm from './PersonForm';
 import GroupForm from './GroupForm';
 
-function NetworkView() {
+function NetworkView({ onBack }) {
   const [people, setPeople] = useState([]);
   const [groups, setGroups] = useState([]);
   const [connections, setConnections] = useState([]);
   const [showPersonForm, setShowPersonForm] = useState(false);
   const [showGroupForm, setShowGroupForm] = useState(false);
-  const [viewMode, setViewMode] = useState('list'); // 'list' o 'graph'
+  const [viewMode, setViewMode] = useState('list');
   const [selectedPerson, setSelectedPerson] = useState(null);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     fetchNetworkData();
+    
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   const fetchNetworkData = async () => {
@@ -44,6 +54,20 @@ function NetworkView() {
         const newPerson = await response.json();
         setPeople([...people, newPerson]);
         setShowPersonForm(false);
+        
+        // Crea connessione con me
+        if (personData.relationship) {
+          await fetch('/api/network/connections', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              from: 'me',
+              to: newPerson.id,
+              type: personData.relationship
+            })
+          });
+          fetchNetworkData();
+        }
       }
     } catch (error) {
       console.error('Error adding person:', error);
@@ -68,38 +92,33 @@ function NetworkView() {
     }
   };
 
-  const addConnection = async (connectionData) => {
-    try {
-      const response = await fetch('/api/network/connections', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(connectionData)
-      });
-      
-      if (response.ok) {
-        const newConnection = await response.json();
-        setConnections([...connections, newConnection]);
-      }
-    } catch (error) {
-      console.error('Error adding connection:', error);
-    }
-  };
-
   const styles = {
     container: {
       width: '100%',
       maxWidth: '1200px',
       margin: '0 auto',
-      padding: '20px',
+      padding: isMobile ? '10px' : '20px',
       fontFamily: "'Courier New', monospace",
       boxSizing: 'border-box',
     },
     header: {
       color: '#00ff00',
-      fontSize: '1.5em',
+      fontSize: isMobile ? '1.2em' : '1.5em',
       marginBottom: '20px',
       letterSpacing: '2px',
       textAlign: 'center',
+    },
+    backButton: {
+      marginBottom: '15px',
+      padding: isMobile ? '6px 12px' : '8px 16px',
+      backgroundColor: 'transparent',
+      color: '#00ff00',
+      border: '1px solid #00ff00',
+      borderRadius: '4px',
+      cursor: 'pointer',
+      fontFamily: "'Courier New', monospace",
+      fontSize: isMobile ? '10px' : '11px',
+      letterSpacing: '1px',
     },
     toolbar: {
       display: 'flex',
@@ -109,8 +128,8 @@ function NetworkView() {
       flexWrap: 'wrap',
     },
     button: {
-      padding: '10px 20px',
-      fontSize: '12px',
+      padding: isMobile ? '10px 14px' : '10px 20px',
+      fontSize: isMobile ? '10px' : '12px',
       border: '1px solid #00ff00',
       borderRadius: '4px',
       cursor: 'pointer',
@@ -120,6 +139,7 @@ function NetworkView() {
       fontFamily: "'Courier New', monospace",
       transition: 'all 0.3s',
       textTransform: 'uppercase',
+      minHeight: isMobile ? '40px' : 'auto',
     },
     listContainer: {
       display: 'grid',
@@ -132,6 +152,8 @@ function NetworkView() {
       padding: '15px',
       cursor: 'pointer',
       transition: 'all 0.3s',
+      width: '100%',
+      boxSizing: 'border-box',
     },
     personName: {
       color: '#00ff00',
@@ -151,6 +173,13 @@ function NetworkView() {
       fontSize: '10px',
       marginRight: '5px',
       letterSpacing: '0.5px',
+    },
+    emptyMessage: {
+      textAlign: 'center',
+      color: '#00cc00',
+      padding: '40px',
+      fontSize: '14px',
+      letterSpacing: '1px',
     },
   };
 
@@ -176,26 +205,45 @@ function NetworkView() {
 
   return (
     <div style={styles.container}>
+      <button 
+        style={styles.backButton}
+        onClick={onBack}
+      >
+        [ ← BACK ]
+      </button>
+      
       <h1 style={styles.header}>[ NETWORK LINK ]</h1>
 
       <div style={styles.toolbar}>
         <button 
           style={{...styles.button, borderColor: '#00ff00'}}
-          onClick={() => setShowPersonForm(!showPersonForm)}
+          onClick={() => {
+            setShowPersonForm(!showPersonForm);
+            setShowGroupForm(false);
+          }}
+          onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(0, 255, 0, 0.1)'}
+          onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
         >
-          [ AGGIUNGI PERSONA ]
+          {showPersonForm ? '[CLOSE]' : '[ADD PERSON]'}
         </button>
         <button 
-          style={{...styles.button, borderColor: '#00ccff'}}
-          onClick={() => setShowGroupForm(!showGroupForm)}
+          style={{...styles.button, borderColor: '#00ccff', color: '#00ccff'}}
+          onClick={() => {
+            setShowGroupForm(!showGroupForm);
+            setShowPersonForm(false);
+          }}
+          onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(0, 204, 255, 0.1)'}
+          onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
         >
-          [ CREA GRUPPO ]
+          {showGroupForm ? '[CLOSE]' : '[CREATE GROUP]'}
         </button>
         <button 
-          style={{...styles.button, borderColor: '#ff9900'}}
+          style={{...styles.button, borderColor: '#ff9900', color: '#ff9900'}}
           onClick={() => setViewMode(viewMode === 'list' ? 'graph' : 'list')}
+          onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(255, 153, 0, 0.1)'}
+          onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
         >
-          [ VISTA: {viewMode === 'list' ? 'LISTA' : 'GRAFO'} ]
+          [VIEW: {viewMode === 'list' ? 'LIST' : 'GRAPH'}]
         </button>
       </div>
 
@@ -203,7 +251,6 @@ function NetworkView() {
         <PersonForm 
           onAddPerson={addPerson}
           people={people}
-          onAddConnection={addConnection}
         />
       )}
 
@@ -216,34 +263,42 @@ function NetworkView() {
 
       {viewMode === 'list' ? (
         <div style={styles.listContainer}>
-          {people.map(person => (
-            <div 
-              key={person.id}
-              style={styles.personCard}
-              onClick={() => setSelectedPerson(person.id)}
-            >
-              <div style={styles.personName}>
-                {person.name} {person.surname}
-              </div>
-              <div style={styles.personInfo}>
-                Relationship: {' '}
-                <span style={{
-                  ...styles.relationshipBadge,
-                  backgroundColor: `${getRelationshipColor(person.relationship)}33`,
-                  color: getRelationshipColor(person.relationship),
-                  border: `1px solid ${getRelationshipColor(person.relationship)}`,
-                }}>
-                  {getRelationshipLabel(person.relationship)}
-                </span>
-              </div>
-              <div style={styles.personInfo}>
-                Met when: {person.metWhen || 'N/A'}
-              </div>
-              <div style={styles.personInfo}>
-                Why: {person.why || 'N/A'}
-              </div>
+          {people.length === 0 ? (
+            <div style={styles.emptyMessage}>
+              [ NO PEOPLE ADDED YET ]
             </div>
-          ))}
+          ) : (
+            people.map(person => (
+              <div 
+                key={person.id}
+                style={styles.personCard}
+                onClick={() => setSelectedPerson(person.id)}
+                onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(0, 255, 0, 0.05)'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = 'rgba(0, 255, 0, 0.02)'}
+              >
+                <div style={styles.personName}>
+                  {person.name} {person.surname}
+                </div>
+                <div style={styles.personInfo}>
+                  Relationship: {' '}
+                  <span style={{
+                    ...styles.relationshipBadge,
+                    backgroundColor: `${getRelationshipColor(person.relationship)}33`,
+                    color: getRelationshipColor(person.relationship),
+                    border: `1px solid ${getRelationshipColor(person.relationship)}`,
+                  }}>
+                    {getRelationshipLabel(person.relationship)}
+                  </span>
+                </div>
+                <div style={styles.personInfo}>
+                  Met when: {person.metWhen || 'N/A'}
+                </div>
+                <div style={styles.personInfo}>
+                  Why: {person.why || 'N/A'}
+                </div>
+              </div>
+            ))
+          )}
         </div>
       ) : (
         <NetworkGraph 
