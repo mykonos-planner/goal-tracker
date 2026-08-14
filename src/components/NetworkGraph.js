@@ -12,6 +12,7 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
   const [showGroupPanel, setShowGroupPanel] = useState(false);
   const [editingGroup, setEditingGroup] = useState(null);
   const [nodePositions, setNodePositions] = useState({});
+  const [groupNamePositions, setGroupNamePositions] = useState({});
 
   // Carica posizioni salvate
   useEffect(() => {
@@ -167,10 +168,22 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
       ctx.fill();
     }
     
-    ctx.fillStyle = '#00ccff';
-    ctx.font = 'bold 12px Courier New';
+    // Salva la posizione del nome del gruppo per il click
+    const nameX = centerX;
+    const nameY = centerY - maxRadius - 10;
+    
+    if (!groupNamePositions[group.id]) {
+      setGroupNamePositions(prev => ({
+        ...prev,
+        [group.id]: { x: nameX, y: nameY }
+      }));
+    }
+    
+    // Disegna il nome del gruppo come elemento cliccabile
+    ctx.fillStyle = isSelected ? '#ffffff' : '#00ccff';
+    ctx.font = 'bold 14px Courier New';
     ctx.textAlign = 'center';
-    ctx.fillText(group.name, centerX, centerY - maxRadius - 10);
+    ctx.fillText(group.name, nameX, nameY);
   };
 
   const drawGrid = (ctx) => {
@@ -265,7 +278,7 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     
     ctx.shadowBlur = 0;
     
-    // Etichetta
+    // Etichetta (NON cliccabile)
     ctx.fillStyle = '#ffffff';
     ctx.font = node.type === 'me' ? 'bold 14px Courier New' : '11px Courier New';
     ctx.textAlign = 'center';
@@ -296,31 +309,20 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     
-    // Controlla se è stato cliccato un gruppo
-    const clickedGroup = groups.find(group => {
-      const groupNodes = nodes.filter(node => 
-        group.people.includes(node.id) || 
-        (group.includeMe && node.id === 'me')
-      );
+    // Controlla se è stato cliccato il nome di un gruppo
+    const clickedGroupName = groups.find(group => {
+      const groupPos = groupNamePositions[group.id];
+      if (!groupPos) return false;
       
-      if (groupNodes.length < 2) return false;
-      
-      const centerX = groupNodes.reduce((sum, node) => sum + node.x, 0) / groupNodes.length;
-      const centerY = groupNodes.reduce((sum, node) => sum + node.y, 0) / groupNodes.length;
-      
-      const maxRadius = Math.max(...groupNodes.map(node => {
-        const distance = Math.sqrt((node.x - centerX) ** 2 + (node.y - centerY) ** 2);
-        return distance + node.radius + 20;
-      }));
-      
-      const distance = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
-      return distance < maxRadius + 20;
+      const distance = Math.sqrt((groupPos.x - x) ** 2 + (groupPos.y - y) ** 2);
+      return distance < 30; // Area di click generosa
     });
     
-    if (clickedGroup) {
-      setSelectedGroup(clickedGroup.id);
+    if (clickedGroupName) {
+      setSelectedGroup(clickedGroupName.id);
       setShowGroupPanel(true);
-      setEditingGroup(clickedGroup);
+      setEditingGroup(clickedGroupName);
+      setSelectedNode(null);
       return;
     }
     
@@ -335,6 +337,11 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
       setSelectedNode(clickedNode.id);
       setSelectedGroup(null);
       setShowGroupPanel(false);
+    } else {
+      // Click su spazio vuoto
+      setSelectedGroup(null);
+      setShowGroupPanel(false);
+      setSelectedNode(null);
     }
   };
 
@@ -387,7 +394,7 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     canvas: {
       width: '100%',
       height: 'auto',
-      cursor: draggedNode ? 'grabbing' : 'grab',
+      cursor: draggedNode ? 'grabbing' : 'default',
       display: 'block',
       backgroundColor: '#0a0a0a',
       borderRadius: '4px',
@@ -457,6 +464,7 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
       gap: '10px',
       justifyContent: 'center',
       marginTop: '10px',
+      flexWrap: 'wrap',
     },
     groupPanelButton: {
       padding: '8px 15px',
@@ -482,6 +490,18 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
       fontFamily: "'Courier New', monospace",
       transition: 'all 0.3s',
     },
+    backButton: {
+      padding: '8px 15px',
+      border: '1px solid #666',
+      borderRadius: '4px',
+      cursor: 'pointer',
+      backgroundColor: 'transparent',
+      color: '#666',
+      fontSize: '10px',
+      letterSpacing: '1px',
+      fontFamily: "'Courier New', monospace",
+      transition: 'all 0.3s',
+    },
   };
 
   const hoveredPerson = hoveredNode ? nodes.find(n => n.id === hoveredNode) : null;
@@ -499,7 +519,7 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
         onMouseLeave={handleMouseUp}
       />
       
-      {hoveredPerson && (
+      {hoveredPerson && !showGroupPanel && (
         <div style={styles.infoPanel}>
           <div style={{fontWeight: 'bold', marginBottom: '5px'}}>
             {hoveredPerson.label}
@@ -522,17 +542,33 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
             <button 
               style={styles.groupPanelButton}
               onClick={() => {
-                // Qui puoi aggiungere la logica per modificare il gruppo
-                alert('Funzionalità di modifica gruppo da implementare');
+                // Qui implementeremo la modifica del gruppo
+                alert('Modifica gruppo: ' + editingGroup.name);
               }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(0, 204, 255, 0.1)'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
             >
               [ EDIT ]
             </button>
             <button 
               style={styles.deleteGroupButton}
               onClick={() => handleDeleteGroup(editingGroup.id)}
+              onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(255, 68, 68, 0.1)'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
             >
               [ DELETE ]
+            </button>
+            <button 
+              style={styles.backButton}
+              onClick={() => {
+                setShowGroupPanel(false);
+                setSelectedGroup(null);
+                setEditingGroup(null);
+              }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(102, 102, 102, 0.1)'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+            >
+              [ BACK ]
             </button>
           </div>
         </div>
