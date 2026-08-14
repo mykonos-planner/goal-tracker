@@ -11,6 +11,7 @@ function NetworkView({ onBack }) {
   const [showGroupForm, setShowGroupForm] = useState(false);
   const [viewMode, setViewMode] = useState('list');
   const [selectedPerson, setSelectedPerson] = useState(null);
+  const [selectedGroup, setSelectedGroup] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -113,6 +114,47 @@ function NetworkView({ onBack }) {
     }
   };
 
+  const updateGroup = async (groupId, groupData) => {
+    try {
+      const response = await fetch(`/api/network/groups/${groupId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(groupData)
+      });
+      
+      if (response.ok) {
+        const updatedGroup = await response.json();
+        setGroups(groups.map(group => 
+          group.id === groupId ? updatedGroup : group
+        ));
+      }
+    } catch (error) {
+      console.error('Error updating group:', error);
+    }
+  };
+
+  const deleteGroup = async (groupId) => {
+    if (!window.confirm('Sei sicuro di voler eliminare questo gruppo?')) {
+      return;
+    }
+    
+    try {
+      const response = await fetch(`/api/network/groups/${groupId}`, {
+        method: 'DELETE',
+      });
+      
+      if (response.ok) {
+        setGroups(groups.filter(group => group.id !== groupId));
+        setSelectedGroup(null);
+      } else {
+        alert('Errore nell\'eliminazione del gruppo');
+      }
+    } catch (error) {
+      console.error('Error deleting group:', error);
+      alert('Errore nell\'eliminazione del gruppo');
+    }
+  };
+
   const styles = {
     container: {
       width: '100%',
@@ -144,13 +186,20 @@ function NetworkView({ onBack }) {
     toolbar: {
       display: 'flex',
       justifyContent: 'center',
-      gap: '10px',
+      alignItems: 'center',
+      gap: isMobile ? '5px' : '10px',
       marginBottom: '20px',
-      flexWrap: 'wrap',
+      flexWrap: 'nowrap',
+      padding: isMobile ? '8px' : '15px',
+      backgroundColor: 'rgba(0, 255, 0, 0.02)',
+      borderRadius: '4px',
+      border: '1px solid rgba(0, 255, 0, 0.2)',
+      width: '100%',
+      boxSizing: 'border-box',
     },
     button: {
-      padding: isMobile ? '10px 14px' : '10px 20px',
-      fontSize: isMobile ? '10px' : '12px',
+      padding: isMobile ? '10px 12px' : '10px 20px',
+      fontSize: isMobile ? '9px' : '12px',
       border: '1px solid #00ff00',
       borderRadius: '4px',
       cursor: 'pointer',
@@ -161,6 +210,8 @@ function NetworkView({ onBack }) {
       transition: 'all 0.3s',
       textTransform: 'uppercase',
       minHeight: isMobile ? '40px' : 'auto',
+      flex: isMobile ? '1' : '0 0 auto',
+      whiteSpace: 'nowrap',
     },
     listContainer: {
       display: 'grid',
@@ -218,6 +269,39 @@ function NetworkView({ onBack }) {
       letterSpacing: '1px',
       fontFamily: "'Courier New', monospace",
       transition: 'all 0.3s',
+    },
+    groupSection: {
+      marginTop: '20px',
+      padding: '15px',
+      backgroundColor: 'rgba(0, 204, 255, 0.02)',
+      border: '1px solid rgba(0, 204, 255, 0.3)',
+      borderRadius: '4px',
+    },
+    groupTitle: {
+      color: '#00ccff',
+      fontSize: '14px',
+      marginBottom: '10px',
+      letterSpacing: '1px',
+    },
+    groupCard: {
+      padding: '10px',
+      backgroundColor: 'rgba(0, 204, 255, 0.03)',
+      border: '1px solid rgba(0, 204, 255, 0.2)',
+      borderRadius: '4px',
+      marginBottom: '5px',
+      cursor: 'pointer',
+      transition: 'all 0.3s',
+    },
+    groupName: {
+      color: '#00ccff',
+      fontSize: '13px',
+      fontWeight: 'bold',
+      marginBottom: '5px',
+    },
+    groupMembers: {
+      color: '#00ccff',
+      fontSize: '11px',
+      opacity: '0.8',
     },
   };
 
@@ -302,66 +386,81 @@ function NetworkView({ onBack }) {
       )}
 
       {viewMode === 'list' ? (
-        <div style={styles.listContainer}>
-          {people.length === 0 ? (
-            <div style={styles.emptyMessage}>
-              [ NO PEOPLE ADDED YET ]
-            </div>
-          ) : (
-            people.map(person => (
-              <div 
-                key={person.id}
-                style={styles.personCard}
-                onClick={() => setSelectedPerson(person.id)}
-                onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(0, 255, 0, 0.05)'}
-                onMouseLeave={(e) => e.target.style.backgroundColor = 'rgba(0, 255, 0, 0.02)'}
-              >
-                <button 
-                  style={styles.deleteButton}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    deletePerson(person.id);
-                  }}
-                  onMouseEnter={(e) => {
-                    e.target.style.backgroundColor = 'rgba(255, 68, 68, 0.1)';
-                    e.target.style.boxShadow = '0 0 10px rgba(255, 68, 68, 0.3)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.backgroundColor = 'transparent';
-                    e.target.style.boxShadow = 'none';
-                  }}
-                >
-                  [DEL]
-                </button>
-                
-                <div style={styles.personName}>
-                  {person.name} {person.surname}
-                </div>
-                <div style={styles.personInfo}>
-                  Relationship: {' '}
-                  <span style={{
-                    ...styles.relationshipBadge,
-                    backgroundColor: `${getRelationshipColor(person.relationship)}33`,
-                    color: getRelationshipColor(person.relationship),
-                    border: `1px solid ${getRelationshipColor(person.relationship)}`,
-                  }}>
-                    {getRelationshipLabel(person.relationship)}
-                  </span>
-                </div>
-                <div style={styles.personInfo}>
-                  Met when: {person.metWhen || 'N/A'}
-                </div>
-                <div style={styles.personInfo}>
-                  Why: {person.why || 'N/A'}
-                </div>
+        <>
+          <div style={styles.listContainer}>
+            {people.length === 0 ? (
+              <div style={styles.emptyMessage}>
+                [ NO PEOPLE ADDED YET ]
               </div>
-            ))
+            ) : (
+              people.map(person => (
+                <div 
+                  key={person.id}
+                  style={styles.personCard}
+                  onClick={() => setSelectedPerson(person.id)}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(0, 255, 0, 0.05)'}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = 'rgba(0, 255, 0, 0.02)'}
+                >
+                  <button 
+                    style={styles.deleteButton}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deletePerson(person.id);
+                    }}
+                  >
+                    [DEL]
+                  </button>
+                  
+                  <div style={styles.personName}>
+                    {person.name} {person.surname}
+                  </div>
+                  <div style={styles.personInfo}>
+                    Relationship: {' '}
+                    <span style={{
+                      ...styles.relationshipBadge,
+                      backgroundColor: `${getRelationshipColor(person.relationship)}33`,
+                      color: getRelationshipColor(person.relationship),
+                      border: `1px solid ${getRelationshipColor(person.relationship)}`,
+                    }}>
+                      {getRelationshipLabel(person.relationship)}
+                    </span>
+                  </div>
+                  <div style={styles.personInfo}>
+                    Met when: {person.metWhen || 'N/A'}
+                  </div>
+                  <div style={styles.personInfo}>
+                    Why: {person.why || 'N/A'}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {groups.length > 0 && (
+            <div style={styles.groupSection}>
+              <h2 style={styles.groupTitle}>[ GROUPS ]</h2>
+              {groups.map(group => (
+                <div 
+                  key={group.id}
+                  style={styles.groupCard}
+                  onClick={() => setSelectedGroup(group.id)}
+                >
+                  <div style={styles.groupName}>{group.name}</div>
+                  <div style={styles.groupMembers}>
+                    Members: {group.people.length + (group.includeMe ? 1 : 0)}
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
-        </div>
+        </>
       ) : (
         <NetworkGraph 
           people={people}
           connections={connections}
+          groups={groups}
+          onDeleteGroup={deleteGroup}
+          onUpdateGroup={updateGroup}
         />
       )}
     </div>

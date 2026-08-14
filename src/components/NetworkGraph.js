@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-function NetworkGraph({ people, connections }) {
+function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGroup }) {
   const canvasRef = useRef(null);
   const [nodes, setNodes] = useState([]);
   const [draggedNode, setDraggedNode] = useState(null);
-  const [canvasSize, setCanvasSize] = useState({ width: 800, height: 600 });
+  const [canvasSize, setCanvasSize] = useState({ width: 1000, height: 700 });
   const [hoveredNode, setHoveredNode] = useState(null);
   const [animationFrame, setAnimationFrame] = useState(0);
+  const [selectedNode, setSelectedNode] = useState(null);
+  const [showGroupMenu, setShowGroupMenu] = useState(false);
 
   useEffect(() => {
     const centerX = canvasSize.width / 2;
@@ -25,7 +27,7 @@ function NetworkGraph({ people, connections }) {
       },
       ...people.map((person, index) => {
         const angle = (index / people.length) * 2 * Math.PI;
-        const radius = 180;
+        const radius = 250;
         return {
           id: person.id,
           x: centerX + radius * Math.cos(angle),
@@ -35,6 +37,7 @@ function NetworkGraph({ people, connections }) {
           color: getRelationshipColor(person.relationship),
           radius: 20,
           pulse: Math.random() * Math.PI * 2,
+          personData: person,
         };
       }),
     ];
@@ -71,6 +74,7 @@ function NetworkGraph({ people, connections }) {
     
     drawGrid(ctx);
     
+    // Disegna connessioni tra persone
     connections.forEach((connection, index) => {
       const fromNode = nodes.find(n => n.id === connection.from);
       const toNode = nodes.find(n => n.id === connection.to);
@@ -80,6 +84,7 @@ function NetworkGraph({ people, connections }) {
       }
     });
     
+    // Disegna connessioni da "me" a tutti
     const meNode = nodes.find(n => n.id === 'me');
     if (meNode) {
       nodes.filter(n => n.id !== 'me').forEach((node, index) => {
@@ -88,11 +93,51 @@ function NetworkGraph({ people, connections }) {
       });
     }
     
+    // Disegna gruppi come cerchi tratteggiati
+    groups.forEach(group => {
+      drawGroupCircle(ctx, group);
+    });
+    
+    // Disegna i nodi
     nodes.forEach(node => {
       drawNode(ctx, node);
     });
     
     drawParticles(ctx);
+  };
+
+  const drawGroupCircle = (ctx, group) => {
+    const groupNodes = nodes.filter(node => 
+      group.people.includes(node.id) || 
+      (group.includeMe && node.id === 'me')
+    );
+    
+    if (groupNodes.length < 2) return;
+    
+    // Calcola il centro del gruppo
+    const centerX = groupNodes.reduce((sum, node) => sum + node.x, 0) / groupNodes.length;
+    const centerY = groupNodes.reduce((sum, node) => sum + node.y, 0) / groupNodes.length;
+    
+    // Calcola il raggio massimo
+    const maxRadius = Math.max(...groupNodes.map(node => {
+      const distance = Math.sqrt((node.x - centerX) ** 2 + (node.y - centerY) ** 2);
+      return distance + node.radius + 20;
+    }));
+    
+    // Disegna cerchio tratteggiato
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, maxRadius, 0, 2 * Math.PI);
+    ctx.strokeStyle = 'rgba(0, 204, 255, 0.5)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 5]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    
+    // Etichetta del gruppo
+    ctx.fillStyle = '#00ccff';
+    ctx.font = 'bold 12px Courier New';
+    ctx.textAlign = 'center';
+    ctx.fillText(group.name, centerX, centerY - maxRadius - 10);
   };
 
   const drawGrid = (ctx) => {
@@ -204,7 +249,7 @@ function NetworkGraph({ people, connections }) {
 
   useEffect(() => {
     drawGraph();
-  }, [nodes, connections, animationFrame, hoveredNode]);
+  }, [nodes, connections, animationFrame, hoveredNode, groups]);
 
   const handleMouseDown = (e) => {
     const canvas = canvasRef.current;
@@ -219,6 +264,7 @@ function NetworkGraph({ people, connections }) {
     
     if (clickedNode) {
       setDraggedNode(clickedNode.id);
+      setSelectedNode(clickedNode.id);
     }
   };
 
@@ -259,15 +305,17 @@ function NetworkGraph({ people, connections }) {
       position: 'relative',
       boxSizing: 'border-box',
       boxShadow: '0 0 30px rgba(0, 255, 0, 0.2)',
+      overflow: 'hidden',
     },
     canvas: {
       width: '100%',
-      height: '100%',
+      height: 'auto',
       cursor: draggedNode ? 'grabbing' : 'grab',
       display: 'block',
       backgroundColor: '#0a0a0a',
       borderRadius: '4px',
       border: '1px solid rgba(0, 255, 0, 0.3)',
+      maxWidth: '100%',
     },
     legend: {
       display: 'flex',
@@ -302,10 +350,12 @@ function NetworkGraph({ people, connections }) {
       color: '#00ff00',
       fontSize: '10px',
       letterSpacing: '1px',
+      zIndex: 10,
     },
   };
 
   const hoveredPerson = hoveredNode ? nodes.find(n => n.id === hoveredNode) : null;
+  const selectedPersonData = selectedNode ? nodes.find(n => n.id === selectedNode) : null;
 
   return (
     <div style={styles.container}>
