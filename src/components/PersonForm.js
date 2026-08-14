@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
 
-function PersonForm({ onAddPerson, people, onAddConnection }) {
+function PersonForm({ onAddPerson, people }) {
   const [name, setName] = useState('');
   const [surname, setSurname] = useState('');
   const [relationship, setRelationship] = useState('friend');
   const [metWhen, setMetWhen] = useState('');
   const [why, setWhy] = useState('');
-  const [connectedTo, setConnectedTo] = useState('');
-  const [connectionType, setConnectionType] = useState('friend');
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -23,24 +21,11 @@ function PersonForm({ onAddPerson, people, onAddConnection }) {
       
       onAddPerson(personData);
       
-      // Se è selezionata una connessione, crea il collegamento
-      if (connectedTo) {
-        // La connessione verrà creata dopo che la persona è stata aggiunta
-        // Per ora, salviamo i dati della connessione
-        console.log('Connessione da creare:', {
-          from: 'me',
-          to: connectedTo,
-          type: connectionType
-        });
-      }
-      
       setName('');
       setSurname('');
       setRelationship('friend');
       setMetWhen('');
       setWhy('');
-      setConnectedTo('');
-      setConnectionType('friend');
     }
   };
 
@@ -153,6 +138,7 @@ function PersonForm({ onAddPerson, people, onAddConnection }) {
         style={styles.select}
       >
         <option value="close_friend">Amico Stretto</option>
+        <option value="important_friend">Amico Importante</option>
         <option value="friend">Amico</option>
         <option value="acquaintance">Conoscente</option>
         <option value="enemy">Nemico</option>
@@ -174,37 +160,6 @@ function PersonForm({ onAddPerson, people, onAddConnection }) {
         placeholder="Motivo della conoscenza..."
         style={styles.textarea}
       />
-      
-      <label style={styles.label}>Collegamento con altra persona (opzionale):</label>
-      <select
-        value={connectedTo}
-        onChange={(e) => setConnectedTo(e.target.value)}
-        style={styles.select}
-      >
-        <option value="">Nessun collegamento</option>
-        <option value="me">Me</option>
-        {people.map(person => (
-          <option key={person.id} value={person.id}>
-            {person.name} {person.surname}
-          </option>
-        ))}
-      </select>
-      
-      {connectedTo && (
-        <>
-          <label style={styles.label}>Tipo di collegamento:</label>
-          <select
-            value={connectionType}
-            onChange={(e) => setConnectionType(e.target.value)}
-            style={styles.select}
-          >
-            <option value="close_friend">Amico Stretto</option>
-            <option value="friend">Amico</option>
-            <option value="acquaintance">Conoscente</option>
-            <option value="enemy">Nemico</option>
-          </select>
-        </>
-      )}
       
       <button 
         type="submit" 

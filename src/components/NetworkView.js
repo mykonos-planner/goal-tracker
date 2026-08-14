@@ -55,7 +55,6 @@ function NetworkView({ onBack }) {
         setPeople([...people, newPerson]);
         setShowPersonForm(false);
         
-        // Crea connessione con me
         if (personData.relationship) {
           await fetch('/api/network/connections', {
             method: 'POST',
@@ -71,6 +70,28 @@ function NetworkView({ onBack }) {
       }
     } catch (error) {
       console.error('Error adding person:', error);
+    }
+  };
+
+  const deletePerson = async (personId) => {
+    if (!window.confirm('Sei sicuro di voler eliminare questa persona?')) {
+      return;
+    }
+    
+    try {
+      const response = await fetch(`/api/network/people/${personId}`, {
+        method: 'DELETE',
+      });
+      
+      if (response.ok) {
+        setPeople(people.filter(person => person.id !== personId));
+        fetchNetworkData();
+      } else {
+        alert('Errore nell\'eliminazione della persona');
+      }
+    } catch (error) {
+      console.error('Error deleting person:', error);
+      alert('Errore nell\'eliminazione della persona');
     }
   };
 
@@ -154,12 +175,14 @@ function NetworkView({ onBack }) {
       transition: 'all 0.3s',
       width: '100%',
       boxSizing: 'border-box',
+      position: 'relative',
     },
     personName: {
       color: '#00ff00',
       fontSize: '16px',
       fontWeight: 'bold',
       marginBottom: '5px',
+      paddingRight: '60px',
     },
     personInfo: {
       color: '#00cc00',
@@ -181,11 +204,27 @@ function NetworkView({ onBack }) {
       fontSize: '14px',
       letterSpacing: '1px',
     },
+    deleteButton: {
+      position: 'absolute',
+      top: '10px',
+      right: '10px',
+      backgroundColor: 'transparent',
+      color: '#ff4444',
+      border: '1px solid #ff4444',
+      borderRadius: '4px',
+      padding: '4px 8px',
+      cursor: 'pointer',
+      fontSize: '10px',
+      letterSpacing: '1px',
+      fontFamily: "'Courier New', monospace",
+      transition: 'all 0.3s',
+    },
   };
 
   const getRelationshipColor = (relationship) => {
     switch (relationship) {
       case 'close_friend': return '#00ff00';
+      case 'important_friend': return '#00ff88';
       case 'friend': return '#00ccff';
       case 'acquaintance': return '#ff9900';
       case 'enemy': return '#ff4444';
@@ -196,6 +235,7 @@ function NetworkView({ onBack }) {
   const getRelationshipLabel = (relationship) => {
     switch (relationship) {
       case 'close_friend': return 'AMICO STRETTO';
+      case 'important_friend': return 'AMICO IMPORTANTE';
       case 'friend': return 'AMICO';
       case 'acquaintance': return 'CONOSCENTE';
       case 'enemy': return 'NEMICO';
@@ -276,6 +316,24 @@ function NetworkView({ onBack }) {
                 onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(0, 255, 0, 0.05)'}
                 onMouseLeave={(e) => e.target.style.backgroundColor = 'rgba(0, 255, 0, 0.02)'}
               >
+                <button 
+                  style={styles.deleteButton}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    deletePerson(person.id);
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.backgroundColor = 'rgba(255, 68, 68, 0.1)';
+                    e.target.style.boxShadow = '0 0 10px rgba(255, 68, 68, 0.3)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.backgroundColor = 'transparent';
+                    e.target.style.boxShadow = 'none';
+                  }}
+                >
+                  [DEL]
+                </button>
+                
                 <div style={styles.personName}>
                   {person.name} {person.surname}
                 </div>

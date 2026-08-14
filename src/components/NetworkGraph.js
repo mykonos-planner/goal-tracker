@@ -54,6 +54,7 @@ function NetworkGraph({ people, connections }) {
   const getRelationshipColor = (relationship) => {
     switch (relationship) {
       case 'close_friend': return '#00ff00';
+      case 'important_friend': return '#00ff88';
       case 'friend': return '#00ccff';
       case 'acquaintance': return '#ff9900';
       case 'enemy': return '#ff4444';
@@ -68,10 +69,8 @@ function NetworkGraph({ people, connections }) {
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Sfondo con effetto griglia
     drawGrid(ctx);
     
-    // Disegna le connessioni con effetto neurale
     connections.forEach((connection, index) => {
       const fromNode = nodes.find(n => n.id === connection.from);
       const toNode = nodes.find(n => n.id === connection.to);
@@ -81,7 +80,6 @@ function NetworkGraph({ people, connections }) {
       }
     });
     
-    // Disegna connessioni da "me" a tutti
     const meNode = nodes.find(n => n.id === 'me');
     if (meNode) {
       nodes.filter(n => n.id !== 'me').forEach((node, index) => {
@@ -90,12 +88,10 @@ function NetworkGraph({ people, connections }) {
       });
     }
     
-    // Disegna i nodi con effetto pulsante
     nodes.forEach(node => {
       drawNode(ctx, node);
     });
     
-    // Disegna particelle fluttuanti
     drawParticles(ctx);
   };
 
@@ -121,7 +117,6 @@ function NetworkGraph({ people, connections }) {
   const drawNeuralConnection = (ctx, fromNode, toNode, type, index) => {
     const color = getRelationshipColor(type);
     
-    // Linea principale con effetto glow
     ctx.beginPath();
     ctx.moveTo(fromNode.x, fromNode.y);
     ctx.lineTo(toNode.x, toNode.y);
@@ -131,7 +126,6 @@ function NetworkGraph({ people, connections }) {
     ctx.shadowBlur = 10;
     ctx.stroke();
     
-    // Linea secondaria più sottile
     ctx.beginPath();
     ctx.moveTo(fromNode.x, fromNode.y);
     ctx.lineTo(toNode.x, toNode.y);
@@ -140,7 +134,6 @@ function NetworkGraph({ people, connections }) {
     ctx.shadowBlur = 0;
     ctx.stroke();
     
-    // Punti luminosi lungo la connessione
     const numPoints = 5;
     for (let i = 1; i < numPoints; i++) {
       const t = i / numPoints;
@@ -163,14 +156,12 @@ function NetworkGraph({ people, connections }) {
   const drawNode = (ctx, node) => {
     const pulseIntensity = Math.sin(animationFrame * 0.03 + node.pulse) * 0.3 + 0.7;
     
-    // Cerchio esterno con effetto glow
     ctx.beginPath();
     ctx.arc(node.x, node.y, node.radius + 10, 0, 2 * Math.PI);
     ctx.strokeStyle = `${node.color}33`;
     ctx.lineWidth = 2;
     ctx.stroke();
     
-    // Cerchio principale
     const gradient = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, node.radius);
     gradient.addColorStop(0, node.color);
     gradient.addColorStop(1, `${node.color}66`);
@@ -182,7 +173,6 @@ function NetworkGraph({ people, connections }) {
     ctx.shadowBlur = 20 * pulseIntensity;
     ctx.fill();
     
-    // Anello luminoso
     ctx.beginPath();
     ctx.arc(node.x, node.y, node.radius * pulseIntensity, 0, 2 * Math.PI);
     ctx.strokeStyle = '#ffffff';
@@ -192,7 +182,6 @@ function NetworkGraph({ people, connections }) {
     
     ctx.shadowBlur = 0;
     
-    // Etichetta
     ctx.fillStyle = '#ffffff';
     ctx.font = node.type === 'me' ? 'bold 14px Courier New' : '11px Courier New';
     ctx.textAlign = 'center';
@@ -346,6 +335,10 @@ function NetworkGraph({ people, connections }) {
         <div style={styles.legendItem}>
           <span style={{...styles.legendDot, backgroundColor: '#00ff00', color: '#00ff00'}} />
           Amico Stretto
+        </div>
+        <div style={styles.legendItem}>
+          <span style={{...styles.legendDot, backgroundColor: '#00ff88', color: '#00ff88'}} />
+          Amico Importante
         </div>
         <div style={styles.legendItem}>
           <span style={{...styles.legendDot, backgroundColor: '#00ccff', color: '#00ccff'}} />
