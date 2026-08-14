@@ -17,12 +17,31 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+  const [isMobile, setIsMobile] = useState(false);
+  const [touchDistance, setTouchDistance] = useState(null);
 
   useEffect(() => {
     const savedPositions = localStorage.getItem('nodePositions');
     if (savedPositions) {
       setNodePositions(JSON.parse(savedPositions));
     }
+    
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (mobile) {
+        setCanvasSize({ width: 800, height: 600 });
+        setZoomLevel(0.5);
+      } else {
+        setCanvasSize({ width: 1600, height: 1000 });
+        setZoomLevel(0.7);
+      }
+    };
+    
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   useEffect(() => {
@@ -41,13 +60,13 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
         label: 'ME', 
         type: 'me', 
         color: '#00ff00',
-        radius: 30,
+        radius: isMobile ? 25 : 30,
         pulse: 0,
       },
       ...people.map((person, index) => {
         const savedPosition = nodePositions[person.id];
         const angle = (index / people.length) * 2 * Math.PI;
-        const radius = 350;
+        const radius = isMobile ? 200 : 350;
         return {
           id: person.id,
           x: savedPosition?.x || centerX + radius * Math.cos(angle),
@@ -55,7 +74,7 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
           label: person.name + ' ' + person.surname,
           type: person.relationship,
           color: getRelationshipColor(person.relationship),
-          radius: 25,
+          radius: isMobile ? 20 : 25,
           pulse: Math.random() * Math.PI * 2,
           personData: person,
         };
@@ -63,7 +82,7 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     ];
     
     setNodes(initialNodes);
-  }, [people, canvasSize, nodePositions]);
+  }, [people, canvasSize, nodePositions, isMobile]);
 
   useEffect(() => {
     const animate = () => {
@@ -103,7 +122,7 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
   const handleZoom = (delta) => {
     setZoomLevel(prev => {
       const newZoom = prev + delta;
-      return Math.max(0.4, Math.min(1.5, newZoom));
+      return Math.max(0.3, Math.min(1.5, newZoom));
     });
   };
 
@@ -189,7 +208,7 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     }));
     
     ctx.fillStyle = isSelected ? '#ffffff' : '#00ccff';
-    ctx.font = 'bold 16px Courier New';
+    ctx.font = isMobile ? 'bold 14px Courier New' : 'bold 16px Courier New';
     ctx.textAlign = 'center';
     ctx.fillText(group.name, labelX, labelY);
   };
@@ -284,13 +303,15 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     ctx.shadowBlur = 0;
     
     ctx.fillStyle = '#ffffff';
-    ctx.font = node.type === 'me' ? 'bold 18px Courier New' : '14px Courier New';
+    ctx.font = node.type === 'me' 
+      ? (isMobile ? 'bold 16px Courier New' : 'bold 18px Courier New')
+      : (isMobile ? '12px Courier New' : '14px Courier New');
     ctx.textAlign = 'center';
-    ctx.fillText(node.label, node.x, node.y - node.radius - 20);
+    ctx.fillText(node.label, node.x, node.y - node.radius - (isMobile ? 15 : 20));
   };
 
   const drawParticles = (ctx) => {
-    const numParticles = 30;
+    const numParticles = isMobile ? 15 : 30;
     
     for (let i = 0; i < numParticles; i++) {
       const x = (Math.sin(animationFrame * 0.01 + i * 2) * 0.5 + 0.5) * canvasSize.width;
@@ -305,15 +326,33 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
 
   useEffect(() => {
     drawGraph();
-  }, [nodes, connections, animationFrame, hoveredNode, groups, selectedNode, selectedGroup, draggedNode, zoomLevel, panOffset]);
+  }, [nodes, connections, animationFrame, hoveredNode, groups, selectedNode, selectedGroup, draggedNode, zoomLevel, panOffset, isMobile]);
 
-  const handleMouseDown = (e) => {
+  const getCoordinates = (e) => {
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
-    const x = (e.clientX - rect.left) * scaleX;
-    const y = (e.clientY - rect.top) * scaleY;
+    
+    let clientX, clientY;
+    
+    if (e.touches) {
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else {
+      clientX = e.clientX;
+      clientY = e.clientY;
+    }
+    
+    return {
+      x: (clientX - rect.left) * scaleX,
+      y: (clientY - rect.top) * scaleY
+    };
+  };
+
+  const handleMouseDown = (e) => {
+    e.preventDefault();
+    const { x, y } = getCoordinates(e);
     
     for (const group of groups) {
       const labelPos = groupLabelPositions[group.id];
@@ -347,7 +386,10 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     }
     
     setIsPanning(true);
-    setPanStart({ x: e.clientX - panOffset.x, y: e.clientY - panOffset.y });
+    setPanStart({ 
+      x: (e.touches ? e.touches[0].clientX : e.clientX) - panOffset.x, 
+      y: (e.touches ? e.touches[0].clientY : e.clientY) - panOffset.y 
+    });
     setSelectedGroup(null);
     setShowGroupPanel(false);
     setSelectedNode(null);
@@ -355,22 +397,19 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
   };
 
   const handleMouseMove = (e) => {
+    e.preventDefault();
+    
     if (draggedNode) {
-      const canvas = canvasRef.current;
-      const rect = canvas.getBoundingClientRect();
-      const scaleX = canvas.width / rect.width;
-      const scaleY = canvas.height / rect.height;
-      const x = (e.clientX - rect.left) * scaleX;
-      const y = (e.clientY - rect.top) * scaleY;
-      
+      const { x, y } = getCoordinates(e);
       const worldX = (x - panOffset.x) / zoomLevel;
       const worldY = (y - panOffset.y) / zoomLevel;
-      
       handleNodeDrag(draggedNode, worldX, worldY);
     } else if (isPanning) {
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
       setPanOffset({
-        x: e.clientX - panStart.x,
-        y: e.clientY - panStart.y
+        x: clientX - panStart.x,
+        y: clientY - panStart.y
       });
     }
   };
@@ -380,12 +419,46 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     setIsPanning(false);
   };
 
+  const handleTouchStart = (e) => {
+    if (e.touches.length === 2) {
+      const distance = Math.sqrt(
+        (e.touches[0].clientX - e.touches[1].clientX) ** 2 +
+        (e.touches[0].clientY - e.touches[1].clientY) ** 2
+      );
+      setTouchDistance(distance);
+    } else {
+      handleMouseDown(e);
+    }
+  };
+
+  const handleTouchMove = (e) => {
+    if (e.touches.length === 2) {
+      const distance = Math.sqrt(
+        (e.touches[0].clientX - e.touches[1].clientX) ** 2 +
+        (e.touches[0].clientY - e.touches[1].clientY) ** 2
+      );
+      
+      if (touchDistance) {
+        const scale = distance / touchDistance;
+        if (scale > 1.1) {
+          handleZoom(0.05);
+          setTouchDistance(distance);
+        } else if (scale < 0.9) {
+          handleZoom(-0.05);
+          setTouchDistance(distance);
+        }
+      }
+    } else {
+      handleMouseMove(e);
+    }
+  };
+
   const styles = {
     container: {
       width: '100%',
       backgroundColor: 'rgba(0, 0, 0, 0.7)',
       borderRadius: '8px',
-      padding: '20px',
+      padding: isMobile ? '10px' : '20px',
       border: '1px solid #00ff00',
       position: 'relative',
       boxSizing: 'border-box',
@@ -401,24 +474,25 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
       borderRadius: '4px',
       border: '1px solid rgba(0, 255, 0, 0.3)',
       maxWidth: '100%',
+      touchAction: 'none',
     },
     zoomControls: {
       position: 'absolute',
-      bottom: '70px',
-      right: '30px',
+      bottom: isMobile ? '50px' : '70px',
+      right: isMobile ? '15px' : '30px',
       display: 'flex',
       flexDirection: 'column',
       gap: '5px',
       zIndex: 15,
     },
     zoomButton: {
-      width: '35px',
-      height: '35px',
+      width: isMobile ? '40px' : '35px',
+      height: isMobile ? '40px' : '35px',
       backgroundColor: 'rgba(0, 0, 0, 0.8)',
       border: '1px solid #00ff00',
       borderRadius: '4px',
       color: '#00ff00',
-      fontSize: '18px',
+      fontSize: isMobile ? '20px' : '18px',
       cursor: 'pointer',
       display: 'flex',
       alignItems: 'center',
@@ -429,7 +503,7 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     legend: {
       display: 'flex',
       justifyContent: 'center',
-      gap: '15px',
+      gap: isMobile ? '8px' : '15px',
       marginTop: '15px',
       flexWrap: 'wrap',
     },
@@ -438,12 +512,12 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
       alignItems: 'center',
       gap: '5px',
       color: '#00ff00',
-      fontSize: '11px',
+      fontSize: isMobile ? '9px' : '11px',
       letterSpacing: '1px',
     },
     legendDot: {
-      width: '10px',
-      height: '10px',
+      width: isMobile ? '8px' : '10px',
+      height: isMobile ? '8px' : '10px',
       borderRadius: '50%',
       display: 'inline-block',
       boxShadow: '0 0 10px currentColor',
@@ -463,66 +537,66 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     },
     groupPanel: {
       position: 'absolute',
-      bottom: '20px',
+      bottom: isMobile ? '10px' : '20px',
       left: '50%',
       transform: 'translateX(-50%)',
       backgroundColor: 'rgba(0, 0, 0, 0.9)',
       border: '1px solid #00ccff',
       borderRadius: '4px',
-      padding: '15px',
+      padding: isMobile ? '10px' : '15px',
       color: '#00ccff',
-      fontSize: '11px',
+      fontSize: isMobile ? '10px' : '11px',
       letterSpacing: '1px',
       zIndex: 20,
-      minWidth: '250px',
+      minWidth: isMobile ? '200px' : '250px',
       boxShadow: '0 0 20px rgba(0, 204, 255, 0.3)',
     },
     groupPanelTitle: {
       color: '#00ccff',
-      fontSize: '14px',
+      fontSize: isMobile ? '12px' : '14px',
       fontWeight: 'bold',
       marginBottom: '10px',
       textAlign: 'center',
     },
     groupPanelButtons: {
       display: 'flex',
-      gap: '10px',
+      gap: '8px',
       justifyContent: 'center',
       marginTop: '10px',
       flexWrap: 'wrap',
     },
     groupPanelButton: {
-      padding: '8px 15px',
+      padding: isMobile ? '8px 12px' : '8px 15px',
       border: '1px solid #00ccff',
       borderRadius: '4px',
       cursor: 'pointer',
       backgroundColor: 'transparent',
       color: '#00ccff',
-      fontSize: '10px',
+      fontSize: isMobile ? '9px' : '10px',
       letterSpacing: '1px',
       fontFamily: "'Courier New', monospace",
       transition: 'all 0.3s',
     },
     deleteGroupButton: {
-      padding: '8px 15px',
+      padding: isMobile ? '8px 12px' : '8px 15px',
       border: '1px solid #ff4444',
       borderRadius: '4px',
       cursor: 'pointer',
       backgroundColor: 'transparent',
       color: '#ff4444',
-      fontSize: '10px',
+      fontSize: isMobile ? '9px' : '10px',
       letterSpacing: '1px',
       fontFamily: "'Courier New', monospace",
       transition: 'all 0.3s',
     },
     backButton: {
-      padding: '8px 15px',
+      padding: isMobile ? '8px 12px' : '8px 15px',
       border: '1px solid #666',
       borderRadius: '4px',
       cursor: 'pointer',
       backgroundColor: 'transparent',
       color: '#666',
-      fontSize: '10px',
+      fontSize: isMobile ? '9px' : '10px',
       letterSpacing: '1px',
       fontFamily: "'Courier New', monospace",
       transition: 'all 0.3s',
@@ -540,6 +614,9 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleMouseUp}
       />
       
       <div style={styles.zoomControls}>
@@ -578,16 +655,12 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
                 setSelectedGroup(null);
                 setEditingGroup(null);
               }}
-              onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(0, 204, 255, 0.1)'}
-              onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
             >
               [ EDIT ]
             </button>
             <button 
               style={styles.deleteGroupButton}
               onClick={() => onDeleteGroup(editingGroup.id)}
-              onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(255, 68, 68, 0.1)'}
-              onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
             >
               [ DELETE ]
             </button>
@@ -598,8 +671,6 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
                 setSelectedGroup(null);
                 setEditingGroup(null);
               }}
-              onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(102, 102, 102, 0.1)'}
-              onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
             >
               [ BACK ]
             </button>
