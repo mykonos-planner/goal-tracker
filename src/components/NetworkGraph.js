@@ -4,7 +4,7 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
   const canvasRef = useRef(null);
   const [nodes, setNodes] = useState([]);
   const [draggedNode, setDraggedNode] = useState(null);
-  const [canvasSize, setCanvasSize] = useState({ width: 1000, height: 700 });
+  const [canvasSize, setCanvasSize] = useState({ width: 1600, height: 1000 });
   const [hoveredNode, setHoveredNode] = useState(null);
   const [animationFrame, setAnimationFrame] = useState(0);
   const [selectedNode, setSelectedNode] = useState(null);
@@ -13,8 +13,10 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
   const [editingGroup, setEditingGroup] = useState(null);
   const [nodePositions, setNodePositions] = useState({});
   const [groupLabelPositions, setGroupLabelPositions] = useState({});
-  const [zoomLevel, setZoomLevel] = useState(1);
+  const [zoomLevel, setZoomLevel] = useState(0.7);
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const [panStart, setPanStart] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     const savedPositions = localStorage.getItem('nodePositions');
@@ -45,7 +47,7 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
       ...people.map((person, index) => {
         const savedPosition = nodePositions[person.id];
         const angle = (index / people.length) * 2 * Math.PI;
-        const radius = 250;
+        const radius = 350;
         return {
           id: person.id,
           x: savedPosition?.x || centerX + radius * Math.cos(angle),
@@ -53,7 +55,7 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
           label: `${person.name} ${person.surname}`,
           type: person.relationship,
           color: getRelationshipColor(person.relationship),
-          radius: 20,
+          radius: 25,
           pulse: Math.random() * Math.PI * 2,
           personData: person,
         };
@@ -101,7 +103,7 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
   const handleZoom = (delta) => {
     setZoomLevel(prev => {
       const newZoom = prev + delta;
-      return Math.max(0.5, Math.min(2, newZoom));
+      return Math.max(0.4, Math.min(1.5, newZoom));
     });
   };
 
@@ -112,7 +114,6 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Applica zoom
     ctx.save();
     ctx.translate(panOffset.x, panOffset.y);
     ctx.scale(zoomLevel, zoomLevel);
@@ -180,7 +181,7 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     }
     
     const labelX = centerX;
-    const labelY = centerY - maxRadius - 15;
+    const labelY = centerY - maxRadius - 20;
     
     setGroupLabelPositions(prev => ({
       ...prev,
@@ -188,13 +189,13 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     }));
     
     ctx.fillStyle = isSelected ? '#ffffff' : '#00ccff';
-    ctx.font = 'bold 14px Courier New';
+    ctx.font = 'bold 16px Courier New';
     ctx.textAlign = 'center';
     ctx.fillText(group.name, labelX, labelY);
   };
 
   const drawGrid = (ctx) => {
-    ctx.strokeStyle = 'rgba(0, 255, 0, 0.05)';
+    ctx.strokeStyle = 'rgba(0, 255, 0, 0.03)';
     ctx.lineWidth = 1;
     
     for (let x = 0; x < canvasSize.width; x += 50) {
@@ -282,21 +283,22 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     
     ctx.shadowBlur = 0;
     
+    // Testo più grande per migliore leggibilità
     ctx.fillStyle = '#ffffff';
-    ctx.font = node.type === 'me' ? 'bold 14px Courier New' : '11px Courier New';
+    ctx.font = node.type === 'me' ? 'bold 18px Courier New' : '14px Courier New';
     ctx.textAlign = 'center';
-    ctx.fillText(node.label, node.x, node.y - node.radius - 15);
+    ctx.fillText(node.label, node.x, node.y - node.radius - 20);
   };
 
   const drawParticles = (ctx) => {
-    const numParticles = 20;
+    const numParticles = 30;
     
     for (let i = 0; i < numParticles; i++) {
       const x = (Math.sin(animationFrame * 0.01 + i * 2) * 0.5 + 0.5) * canvasSize.width;
       const y = (Math.cos(animationFrame * 0.015 + i * 3) * 0.5 + 0.5) * canvasSize.height;
       
       ctx.beginPath();
-      ctx.arc(x, y, 1, 0, 2 * Math.PI);
+      ctx.arc(x, y, 1.5, 0, 2 * Math.PI);
       ctx.fillStyle = 'rgba(0, 255, 0, 0.3)';
       ctx.fill();
     }
@@ -318,8 +320,10 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     for (const group of groups) {
       const labelPos = groupLabelPositions[group.id];
       if (labelPos) {
-        const distance = Math.sqrt((labelPos.x - x) ** 2 + (labelPos.y - y) ** 2);
-        if (distance < 30) {
+        const adjustedX = labelPos.x * zoomLevel + panOffset.x;
+        const adjustedY = labelPos.y * zoomLevel + panOffset.y;
+        const distance = Math.sqrt((adjustedX - x) ** 2 + (adjustedY - y) ** 2);
+        if (distance < 30 * zoomLevel) {
           setSelectedGroup(group.id);
           setShowGroupPanel(true);
           setEditingGroup(group);
@@ -332,8 +336,11 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     
     // Controlla click sul pallino
     for (const node of nodes) {
-      const distance = Math.sqrt((node.x - x) ** 2 + (node.y - y) ** 2);
-      if (distance <= node.radius + 5) {
+      const adjustedX = node.x * zoomLevel + panOffset.x;
+      const adjustedY = node.y * zoomLevel + panOffset.y;
+      const adjustedRadius = node.radius * zoomLevel;
+      const distance = Math.sqrt((adjustedX - x) ** 2 + (adjustedY - y) ** 2);
+      if (distance <= adjustedRadius + 5) {
         setDraggedNode(node.id);
         setSelectedNode(node.id);
         setSelectedGroup(null);
@@ -342,6 +349,9 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
       }
     }
     
+    // Inizia pan
+    setIsPanning(true);
+    setPanStart({ x: e.clientX - panOffset.x, y: e.clientY - panOffset.y });
     setSelectedGroup(null);
     setShowGroupPanel(false);
     setSelectedNode(null);
@@ -349,26 +359,30 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
   };
 
   const handleMouseMove = (e) => {
-    if (!draggedNode) return;
-    
-    const canvas = canvasRef.current;
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    const x = (e.clientX - rect.left) * scaleX;
-    const y = (e.clientY - rect.top) * scaleY;
-    
-    handleNodeDrag(draggedNode, x, y);
+    if (draggedNode) {
+      const canvas = canvasRef.current;
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const x = (e.clientX - rect.left) * scaleX;
+      const y = (e.clientY - rect.top) * scaleY;
+      
+      // Converti coordinate per il drag
+      const worldX = (x - panOffset.x) / zoomLevel;
+      const worldY = (y - panOffset.y) / zoomLevel;
+      
+      handleNodeDrag(draggedNode, worldX, worldY);
+    } else if (isPanning) {
+      setPanOffset({
+        x: e.clientX - panStart.x,
+        y: e.clientY - panStart.y
+      });
+    }
   };
 
   const handleMouseUp = () => {
     setDraggedNode(null);
-  };
-
-  const handleWheel = (e) => {
-    e.preventDefault();
-    const delta = e.deltaY > 0 ? -0.1 : 0.1;
-    handleZoom(delta);
+    setIsPanning(false);
   };
 
   const styles = {
@@ -386,7 +400,7 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     canvas: {
       width: '100%',
       height: 'auto',
-      cursor: draggedNode ? 'grabbing' : 'default',
+      cursor: draggedNode ? 'grabbing' : isPanning ? 'grabbing' : 'grab',
       display: 'block',
       backgroundColor: '#0a0a0a',
       borderRadius: '4px',
@@ -395,8 +409,8 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     },
     zoomControls: {
       position: 'absolute',
-      bottom: '60px',
-      right: '10px',
+      bottom: '70px',
+      right: '30px',
       display: 'flex',
       flexDirection: 'column',
       gap: '5px',
@@ -515,7 +529,7 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
       color: '#666',
       fontSize: '10px',
       letterSpacing: '1px',
-      fontFamily: "'Courier New', monospace",
+      fontFamily: "'Courier New', monospace',
       transition: 'all 0.3s',
     },
   };
@@ -531,7 +545,6 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
-        onWheel={handleWheel}
       />
       
       <div style={styles.zoomControls}>

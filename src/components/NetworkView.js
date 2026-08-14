@@ -264,7 +264,7 @@ function NetworkView({ onBack }) {
       fontSize: '16px',
       fontWeight: 'bold',
       marginBottom: '5px',
-      paddingRight: '100px',
+      paddingRight: '120px',
     },
     personInfo: {
       color: '#00cc00',
@@ -286,13 +286,13 @@ function NetworkView({ onBack }) {
       fontSize: '14px',
       letterSpacing: '1px',
     },
-    deleteButton: {
+    editButton: {
       position: 'absolute',
       top: '10px',
-      right: '10px',
+      right: '70px',
       backgroundColor: 'transparent',
-      color: '#ff4444',
-      border: '1px solid #ff4444',
+      color: '#ff9900',
+      border: '1px solid #ff9900',
       borderRadius: '4px',
       padding: '4px 8px',
       cursor: 'pointer',
@@ -301,13 +301,13 @@ function NetworkView({ onBack }) {
       fontFamily: "'Courier New', monospace",
       transition: 'all 0.3s',
     },
-    editButton: {
+    deleteButton: {
       position: 'absolute',
       top: '10px',
-      right: '60px',
+      right: '15px',
       backgroundColor: 'transparent',
-      color: '#ff9900',
-      border: '1px solid #ff9900',
+      color: '#ff4444',
+      border: '1px solid #ff4444',
       borderRadius: '4px',
       padding: '4px 8px',
       cursor: 'pointer',
@@ -354,7 +354,7 @@ function NetworkView({ onBack }) {
     editGroupButton: {
       position: 'absolute',
       top: '10px',
-      right: '10px',
+      right: '15px',
       backgroundColor: 'transparent',
       color: '#00ccff',
       border: '1px solid #00ccff',
@@ -488,12 +488,24 @@ function NetworkView({ onBack }) {
                       setEditingPerson(person);
                       setShowEditPersonForm(true);
                     }}
+                    onMouseEnter={(e) => {
+                      e.target.style.backgroundColor = 'rgba(255, 153, 0, 0.1)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.backgroundColor = 'transparent';
+                    }}
                   >
                     [EDIT]
                   </button>
                   <button 
                     style={styles.deleteButton}
                     onClick={() => deletePerson(person.id)}
+                    onMouseEnter={(e) => {
+                      e.target.style.backgroundColor = 'rgba(255, 68, 68, 0.1)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.backgroundColor = 'transparent';
+                    }}
                   >
                     [DEL]
                   </button>
@@ -536,6 +548,12 @@ function NetworkView({ onBack }) {
                     onClick={() => {
                       setEditingGroup(group);
                       setShowEditGroupForm(true);
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.backgroundColor = 'rgba(0, 204, 255, 0.1)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.backgroundColor = 'transparent';
                     }}
                   >
                     [EDIT]
