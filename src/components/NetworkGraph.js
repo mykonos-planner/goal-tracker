@@ -131,6 +131,10 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
+    // Abilita antialiasing per testo più nitido
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    
     ctx.save();
     ctx.translate(panOffset.x, panOffset.y);
     ctx.scale(zoomLevel, zoomLevel);
@@ -206,14 +210,14 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     }));
     
     // Testo con sfondo per migliore leggibilità
-    const fontSize = 16 / zoomLevel;
+    const fontSize = Math.max(12, 16 / zoomLevel);
     ctx.font = 'bold ' + fontSize + 'px Courier New';
     ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
     
-    // Sfondo del testo
     const textWidth = ctx.measureText(group.name).width;
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-    ctx.fillRect(labelX - textWidth/2 - 5, labelY - fontSize/2 - 5, textWidth + 10, fontSize + 10);
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+    ctx.fillRect(labelX - textWidth/2 - 8, labelY - fontSize/2 - 6, textWidth + 16, fontSize + 12);
     
     ctx.fillStyle = isSelected ? '#ffffff' : '#00ccff';
     ctx.fillText(group.name, labelX, labelY);
@@ -223,17 +227,20 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     ctx.strokeStyle = 'rgba(0, 255, 0, 0.03)';
     ctx.lineWidth = 1;
     
-    for (let x = 0; x < 1600; x += 50) {
+    const gridWidth = 1600;
+    const gridHeight = 1000;
+    
+    for (let x = 0; x < gridWidth; x += 50) {
       ctx.beginPath();
       ctx.moveTo(x, 0);
-      ctx.lineTo(x, 1000);
+      ctx.lineTo(x, gridHeight);
       ctx.stroke();
     }
     
-    for (let y = 0; y < 1000; y += 50) {
+    for (let y = 0; y < gridHeight; y += 50) {
       ctx.beginPath();
       ctx.moveTo(0, y);
-      ctx.lineTo(1600, y);
+      ctx.lineTo(gridWidth, y);
       ctx.stroke();
     }
   };
@@ -309,15 +316,15 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     ctx.shadowBlur = 0;
     
     // Testo con dimensione che si adatta allo zoom
-    const fontSize = (node.type === 'me' ? 18 : 14) / zoomLevel;
+    const fontSize = Math.max(10, (node.type === 'me' ? 18 : 14) / zoomLevel);
     ctx.font = (node.type === 'me' ? 'bold ' : '') + fontSize + 'px Courier New';
     ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
     
-    // Sfondo del testo per migliore leggibilità
     const textWidth = ctx.measureText(node.label).width;
     const textY = node.y - node.radius - 20;
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-    ctx.fillRect(node.x - textWidth/2 - 5, textY - fontSize/2 - 5, textWidth + 10, fontSize + 10);
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+    ctx.fillRect(node.x - textWidth/2 - 8, textY - fontSize/2 - 6, textWidth + 16, fontSize + 12);
     
     ctx.fillStyle = '#ffffff';
     ctx.fillText(node.label, node.x, textY);
