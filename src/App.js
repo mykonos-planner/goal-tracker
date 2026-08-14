@@ -211,7 +211,7 @@ function App() {
     container: {
       maxWidth: '1200px',
       margin: '0 auto',
-      padding: isMobile ? '5px' : '20px',
+      padding: isMobile ? '10px' : '20px',
       fontFamily: "'Courier New', monospace",
       minHeight: '100vh',
       width: '100%',
@@ -395,6 +395,13 @@ function App() {
       fontSize: isMobile ? '10px' : '11px',
       letterSpacing: '1px',
     },
+    sectionTitle: {
+      color: '#00ff00',
+      fontSize: isMobile ? '1.2em' : '1.5em',
+      marginBottom: '20px',
+      letterSpacing: '2px',
+      textAlign: 'center',
+    },
   };
 
   if (loading && goals.length === 0) {
@@ -471,16 +478,9 @@ function App() {
     return <NetworkView onBack={() => setCurrentSection('home')} />;
   }
 
+  // Sezione Objectives (senza header Organizer)
   return (
     <div style={styles.container}>
-      <div style={styles.header}>
-        <h1 style={styles.title}>Organizer</h1>
-        <p style={styles.subtitle}>// Objectives Management</p>
-        <div style={styles.timestamp}>
-          {currentTime.toLocaleString('it-IT')}
-        </div>
-      </div>
-
       <button 
         style={styles.backButton}
         onClick={() => {
@@ -490,6 +490,8 @@ function App() {
       >
         [ ← BACK ]
       </button>
+
+      <h1 style={styles.sectionTitle}>[ OBJECTIVES ]</h1>
 
       {error && (
         <div style={styles.errorMessage}>
