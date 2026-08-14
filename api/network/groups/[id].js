@@ -19,14 +19,13 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'PUT') {
-      // Aggiorna persona
       const getResponse = await fetch(url, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(["HGET", "network_people", id])
+        body: JSON.stringify(["HGET", "network_groups", id])
       });
 
       if (!getResponse.ok) {
@@ -34,14 +33,14 @@ export default async function handler(req, res) {
       }
 
       const getData = await getResponse.json();
-      const existingPerson = getData.result ? JSON.parse(getData.result) : null;
+      const existingGroup = getData.result ? JSON.parse(getData.result) : null;
 
-      if (!existingPerson) {
-        return res.status(404).json({ error: 'Persona non trovata' });
+      if (!existingGroup) {
+        return res.status(404).json({ error: 'Gruppo non trovato' });
       }
 
-      const updatedPerson = {
-        ...existingPerson,
+      const updatedGroup = {
+        ...existingGroup,
         ...req.body,
         updatedAt: new Date().toISOString(),
       };
@@ -52,14 +51,14 @@ export default async function handler(req, res) {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(["HSET", "network_people", id, JSON.stringify(updatedPerson)])
+        body: JSON.stringify(["HSET", "network_groups", id, JSON.stringify(updatedGroup)])
       });
 
       if (!updateResponse.ok) {
         return res.status(500).json({ error: 'Errore nell\'aggiornamento' });
       }
 
-      return res.status(200).json(updatedPerson);
+      return res.status(200).json(updatedGroup);
     }
 
     if (req.method === 'DELETE') {
@@ -69,14 +68,14 @@ export default async function handler(req, res) {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(["HDEL", "network_people", id])
+        body: JSON.stringify(["HDEL", "network_groups", id])
       });
 
       if (!deleteResponse.ok) {
         return res.status(500).json({ error: 'Errore nell\'eliminazione' });
       }
 
-      return res.status(200).json({ message: 'Persona eliminata con successo' });
+      return res.status(200).json({ message: 'Gruppo eliminato con successo' });
     }
 
     return res.status(405).json({ error: 'Method not allowed' });
