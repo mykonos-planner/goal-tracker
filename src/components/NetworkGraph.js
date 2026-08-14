@@ -131,7 +131,6 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Abilita antialiasing per testo più nitido
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
     
@@ -209,7 +208,6 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
       [group.id]: { x: labelX, y: labelY }
     }));
     
-    // Testo con sfondo per migliore leggibilità
     const fontSize = Math.max(12, 16 / zoomLevel);
     ctx.font = 'bold ' + fontSize + 'px Courier New';
     ctx.textAlign = 'center';
@@ -315,7 +313,6 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     
     ctx.shadowBlur = 0;
     
-    // Testo con dimensione che si adatta allo zoom
     const fontSize = Math.max(10, (node.type === 'me' ? 18 : 14) / zoomLevel);
     ctx.font = (node.type === 'me' ? 'bold ' : '') + fontSize + 'px Courier New';
     ctx.textAlign = 'center';
@@ -618,7 +615,7 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
       color: '#666',
       fontSize: isMobile ? '9px' : '10px',
       letterSpacing: '1px',
-      fontFamily: "'Courier New', monospace',
+      fontFamily: "'Courier New', monospace",
       transition: 'all 0.3s',
     },
   };
