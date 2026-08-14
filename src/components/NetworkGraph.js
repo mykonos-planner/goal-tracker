@@ -12,9 +12,8 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
   const [showGroupPanel, setShowGroupPanel] = useState(false);
   const [editingGroup, setEditingGroup] = useState(null);
   const [nodePositions, setNodePositions] = useState({});
-  const [groupNamePositions, setGroupNamePositions] = useState({});
+  const [groupLabelPositions, setGroupLabelPositions] = useState({});
 
-  // Carica posizioni salvate
   useEffect(() => {
     const savedPositions = localStorage.getItem('nodePositions');
     if (savedPositions) {
@@ -22,7 +21,6 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     }
   }, []);
 
-  // Salva posizioni quando cambiano
   useEffect(() => {
     localStorage.setItem('nodePositions', JSON.stringify(nodePositions));
   }, [nodePositions]);
@@ -107,7 +105,6 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     
     drawGrid(ctx);
     
-    // Disegna connessioni
     connections.forEach((connection, index) => {
       const fromNode = nodes.find(n => n.id === connection.from);
       const toNode = nodes.find(n => n.id === connection.to);
@@ -124,12 +121,10 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
       });
     }
     
-    // Disegna gruppi
     groups.forEach(group => {
       drawGroupCircle(ctx, group);
     });
     
-    // Disegna nodi
     nodes.forEach(node => {
       drawNode(ctx, node);
     });
@@ -168,22 +163,20 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
       ctx.fill();
     }
     
-    // Salva la posizione del nome del gruppo per il click
-    const nameX = centerX;
-    const nameY = centerY - maxRadius - 10;
+    // Salva la posizione del nome del gruppo
+    const labelX = centerX;
+    const labelY = centerY - maxRadius - 15;
     
-    if (!groupNamePositions[group.id]) {
-      setGroupNamePositions(prev => ({
-        ...prev,
-        [group.id]: { x: nameX, y: nameY }
-      }));
-    }
+    setGroupLabelPositions(prev => ({
+      ...prev,
+      [group.id]: { x: labelX, y: labelY, width: ctx.measureText(group.name).width || 100 }
+    }));
     
-    // Disegna il nome del gruppo come elemento cliccabile
+    // Disegna il nome del gruppo
     ctx.fillStyle = isSelected ? '#ffffff' : '#00ccff';
     ctx.font = 'bold 14px Courier New';
     ctx.textAlign = 'center';
-    ctx.fillText(group.name, nameX, nameY);
+    ctx.fillText(group.name, labelX, labelY);
   };
 
   const drawGrid = (ctx) => {
@@ -249,14 +242,12 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     const isSelected = selectedNode === node.id;
     const isDragged = draggedNode === node.id;
     
-    // Cerchio esterno
     ctx.beginPath();
     ctx.arc(node.x, node.y, node.radius + 10, 0, 2 * Math.PI);
     ctx.strokeStyle = isSelected ? '#ffffff' : `${node.color}33`;
     ctx.lineWidth = isSelected ? 3 : 2;
     ctx.stroke();
     
-    // Cerchio principale
     const gradient = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, node.radius);
     gradient.addColorStop(0, node.color);
     gradient.addColorStop(1, `${node.color}66`);
@@ -268,7 +259,6 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     ctx.shadowBlur = isDragged ? 30 : 20 * pulseIntensity;
     ctx.fill();
     
-    // Anello luminoso
     ctx.beginPath();
     ctx.arc(node.x, node.y, node.radius * pulseIntensity, 0, 2 * Math.PI);
     ctx.strokeStyle = '#ffffff';
@@ -278,7 +268,6 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     
     ctx.shadowBlur = 0;
     
-    // Etichetta (NON cliccabile)
     ctx.fillStyle = '#ffffff';
     ctx.font = node.type === 'me' ? 'bold 14px Courier New' : '11px Courier New';
     ctx.textAlign = 'center';
@@ -306,77 +295,61 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
   const handleMouseDown = (e) => {
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const x = (e.clientX - rect.left) * scaleX;
+    const y = (e.clientY - rect.top) * scaleY;
     
-    // Controlla se è stato cliccato il nome di un gruppo
-    const clickedGroupName = groups.find(group => {
-      const groupPos = groupNamePositions[group.id];
-      if (!groupPos) return false;
-      
-      const distance = Math.sqrt((groupPos.x - x) ** 2 + (groupPos.y - y) ** 2);
-      return distance < 30; // Area di click generosa
-    });
-    
-    if (clickedGroupName) {
-      setSelectedGroup(clickedGroupName.id);
-      setShowGroupPanel(true);
-      setEditingGroup(clickedGroupName);
-      setSelectedNode(null);
-      return;
+    // PRIMA controlla se è stato cliccato il nome di un gruppo
+    for (const group of groups) {
+      const labelPos = groupLabelPositions[group.id];
+      if (labelPos) {
+        const distance = Math.sqrt((labelPos.x - x) ** 2 + (labelPos.y - y) ** 2);
+        if (distance < 30) {
+          setSelectedGroup(group.id);
+          setShowGroupPanel(true);
+          setEditingGroup(group);
+          setSelectedNode(null);
+          setDraggedNode(null);
+          return;
+        }
+      }
     }
     
-    // Controlla se è stato cliccato un nodo (solo sul pallino)
-    const clickedNode = nodes.find(node => {
+    // POI controlla se è stato cliccato un nodo (SOLO sul pallino)
+    for (const node of nodes) {
       const distance = Math.sqrt((node.x - x) ** 2 + (node.y - y) ** 2);
-      return distance < node.radius;
-    });
-    
-    if (clickedNode) {
-      setDraggedNode(clickedNode.id);
-      setSelectedNode(clickedNode.id);
-      setSelectedGroup(null);
-      setShowGroupPanel(false);
-    } else {
-      // Click su spazio vuoto
-      setSelectedGroup(null);
-      setShowGroupPanel(false);
-      setSelectedNode(null);
+      if (distance <= node.radius + 5) {
+        setDraggedNode(node.id);
+        setSelectedNode(node.id);
+        setSelectedGroup(null);
+        setShowGroupPanel(false);
+        return;
+      }
     }
+    
+    // Click su spazio vuoto
+    setSelectedGroup(null);
+    setShowGroupPanel(false);
+    setSelectedNode(null);
+    setDraggedNode(null);
   };
 
   const handleMouseMove = (e) => {
+    if (!draggedNode) return;
+    
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const x = (e.clientX - rect.left) * scaleX;
+    const y = (e.clientY - rect.top) * scaleY;
     
-    if (draggedNode) {
-      handleNodeDrag(draggedNode, x, y);
-    } else {
-      const hovered = nodes.find(node => {
-        const distance = Math.sqrt((node.x - x) ** 2 + (node.y - y) ** 2);
-        return distance < node.radius;
-      });
-      setHoveredNode(hovered ? hovered.id : null);
-    }
+    handleNodeDrag(draggedNode, x, y);
   };
 
   const handleMouseUp = () => {
     setDraggedNode(null);
-  };
-
-  const handleUpdateGroup = (updatedGroup) => {
-    onUpdateGroup(updatedGroup.id, updatedGroup);
-    setShowGroupPanel(false);
-    setEditingGroup(null);
-  };
-
-  const handleDeleteGroup = (groupId) => {
-    onDeleteGroup(groupId);
-    setShowGroupPanel(false);
-    setEditingGroup(null);
-    setSelectedGroup(null);
   };
 
   const styles = {
@@ -504,8 +477,6 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     },
   };
 
-  const hoveredPerson = hoveredNode ? nodes.find(n => n.id === hoveredNode) : null;
-
   return (
     <div style={styles.container}>
       <canvas
@@ -519,17 +490,6 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
         onMouseLeave={handleMouseUp}
       />
       
-      {hoveredPerson && !showGroupPanel && (
-        <div style={styles.infoPanel}>
-          <div style={{fontWeight: 'bold', marginBottom: '5px'}}>
-            {hoveredPerson.label}
-          </div>
-          <div style={{color: hoveredPerson.color}}>
-            [{hoveredPerson.type.toUpperCase()}]
-          </div>
-        </div>
-      )}
-      
       {showGroupPanel && editingGroup && (
         <div style={styles.groupPanel}>
           <div style={styles.groupPanelTitle}>
@@ -542,19 +502,14 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
             <button 
               style={styles.groupPanelButton}
               onClick={() => {
-                // Qui implementeremo la modifica del gruppo
                 alert('Modifica gruppo: ' + editingGroup.name);
               }}
-              onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(0, 204, 255, 0.1)'}
-              onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
             >
               [ EDIT ]
             </button>
             <button 
               style={styles.deleteGroupButton}
-              onClick={() => handleDeleteGroup(editingGroup.id)}
-              onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(255, 68, 68, 0.1)'}
-              onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+              onClick={() => onDeleteGroup(editingGroup.id)}
             >
               [ DELETE ]
             </button>
@@ -565,8 +520,6 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
                 setSelectedGroup(null);
                 setEditingGroup(null);
               }}
-              onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(102, 102, 102, 0.1)'}
-              onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
             >
               [ BACK ]
             </button>
