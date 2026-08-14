@@ -52,7 +52,7 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
           id: person.id,
           x: savedPosition?.x || centerX + radius * Math.cos(angle),
           y: savedPosition?.y || centerY + radius * Math.sin(angle),
-          label: `${person.name} ${person.surname}`,
+          label: person.name + ' ' + person.surname,
           type: person.relationship,
           color: getRelationshipColor(person.relationship),
           radius: 25,
@@ -228,7 +228,7 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     ctx.beginPath();
     ctx.moveTo(fromNode.x, fromNode.y);
     ctx.lineTo(toNode.x, toNode.y);
-    ctx.strokeStyle = `${color}88`;
+    ctx.strokeStyle = color + '88';
     ctx.lineWidth = 1;
     ctx.shadowBlur = 0;
     ctx.stroke();
@@ -259,13 +259,13 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     
     ctx.beginPath();
     ctx.arc(node.x, node.y, node.radius + 10, 0, 2 * Math.PI);
-    ctx.strokeStyle = isSelected ? '#ffffff' : `${node.color}33`;
+    ctx.strokeStyle = isSelected ? '#ffffff' : node.color + '33';
     ctx.lineWidth = isSelected ? 3 : 2;
     ctx.stroke();
     
     const gradient = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, node.radius);
     gradient.addColorStop(0, node.color);
-    gradient.addColorStop(1, `${node.color}66`);
+    gradient.addColorStop(1, node.color + '66');
     
     ctx.beginPath();
     ctx.arc(node.x, node.y, node.radius, 0, 2 * Math.PI);
@@ -283,7 +283,6 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     
     ctx.shadowBlur = 0;
     
-    // Testo più grande per migliore leggibilità
     ctx.fillStyle = '#ffffff';
     ctx.font = node.type === 'me' ? 'bold 18px Courier New' : '14px Courier New';
     ctx.textAlign = 'center';
@@ -316,7 +315,6 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     const x = (e.clientX - rect.left) * scaleX;
     const y = (e.clientY - rect.top) * scaleY;
     
-    // Controlla click sul nome del gruppo
     for (const group of groups) {
       const labelPos = groupLabelPositions[group.id];
       if (labelPos) {
@@ -334,7 +332,6 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
       }
     }
     
-    // Controlla click sul pallino
     for (const node of nodes) {
       const adjustedX = node.x * zoomLevel + panOffset.x;
       const adjustedY = node.y * zoomLevel + panOffset.y;
@@ -349,7 +346,6 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
       }
     }
     
-    // Inizia pan
     setIsPanning(true);
     setPanStart({ x: e.clientX - panOffset.x, y: e.clientY - panOffset.y });
     setSelectedGroup(null);
@@ -367,7 +363,6 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
       const x = (e.clientX - rect.left) * scaleX;
       const y = (e.clientY - rect.top) * scaleY;
       
-      // Converti coordinate per il drag
       const worldX = (x - panOffset.x) / zoomLevel;
       const worldY = (y - panOffset.y) / zoomLevel;
       
@@ -529,7 +524,7 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
       color: '#666',
       fontSize: '10px',
       letterSpacing: '1px',
-      fontFamily: "'Courier New', monospace',
+      fontFamily: "'Courier New', monospace",
       transition: 'all 0.3s',
     },
   };
