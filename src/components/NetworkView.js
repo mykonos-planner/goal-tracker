@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import NetworkGraph from './NetworkGraph';
 import PersonForm from './PersonForm';
 import GroupForm from './GroupForm';
+import EditPersonForm from './EditPersonForm';
+import EditGroupForm from './EditGroupForm';
 
 function NetworkView({ onBack }) {
   const [people, setPeople] = useState([]);
@@ -9,6 +11,10 @@ function NetworkView({ onBack }) {
   const [connections, setConnections] = useState([]);
   const [showPersonForm, setShowPersonForm] = useState(false);
   const [showGroupForm, setShowGroupForm] = useState(false);
+  const [showEditPersonForm, setShowEditPersonForm] = useState(false);
+  const [showEditGroupForm, setShowEditGroupForm] = useState(false);
+  const [editingPerson, setEditingPerson] = useState(null);
+  const [editingGroup, setEditingGroup] = useState(null);
   const [viewMode, setViewMode] = useState('list');
   const [selectedPerson, setSelectedPerson] = useState(null);
   const [selectedGroup, setSelectedGroup] = useState(null);
@@ -74,6 +80,28 @@ function NetworkView({ onBack }) {
     }
   };
 
+  const updatePerson = async (personId, personData) => {
+    try {
+      const response = await fetch(`/api/network/people/${personId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(personData)
+      });
+      
+      if (response.ok) {
+        const updatedPerson = await response.json();
+        setPeople(people.map(person => 
+          person.id === personId ? updatedPerson : person
+        ));
+        setShowEditPersonForm(false);
+        setEditingPerson(null);
+        fetchNetworkData();
+      }
+    } catch (error) {
+      console.error('Error updating person:', error);
+    }
+  };
+
   const deletePerson = async (personId) => {
     if (!window.confirm('Sei sicuro di voler eliminare questa persona?')) {
       return;
@@ -127,6 +155,9 @@ function NetworkView({ onBack }) {
         setGroups(groups.map(group => 
           group.id === groupId ? updatedGroup : group
         ));
+        setShowEditGroupForm(false);
+        setEditingGroup(null);
+        fetchNetworkData();
       }
     } catch (error) {
       console.error('Error updating group:', error);
@@ -233,7 +264,7 @@ function NetworkView({ onBack }) {
       fontSize: '16px',
       fontWeight: 'bold',
       marginBottom: '5px',
-      paddingRight: '60px',
+      paddingRight: '100px',
     },
     personInfo: {
       color: '#00cc00',
@@ -270,6 +301,21 @@ function NetworkView({ onBack }) {
       fontFamily: "'Courier New', monospace",
       transition: 'all 0.3s',
     },
+    editButton: {
+      position: 'absolute',
+      top: '10px',
+      right: '60px',
+      backgroundColor: 'transparent',
+      color: '#ff9900',
+      border: '1px solid #ff9900',
+      borderRadius: '4px',
+      padding: '4px 8px',
+      cursor: 'pointer',
+      fontSize: '10px',
+      letterSpacing: '1px',
+      fontFamily: "'Courier New', monospace",
+      transition: 'all 0.3s',
+    },
     groupSection: {
       marginTop: '20px',
       padding: '15px',
@@ -291,17 +337,34 @@ function NetworkView({ onBack }) {
       marginBottom: '5px',
       cursor: 'pointer',
       transition: 'all 0.3s',
+      position: 'relative',
     },
     groupName: {
       color: '#00ccff',
       fontSize: '13px',
       fontWeight: 'bold',
       marginBottom: '5px',
+      paddingRight: '100px',
     },
     groupMembers: {
       color: '#00ccff',
       fontSize: '11px',
       opacity: '0.8',
+    },
+    editGroupButton: {
+      position: 'absolute',
+      top: '10px',
+      right: '10px',
+      backgroundColor: 'transparent',
+      color: '#00ccff',
+      border: '1px solid #00ccff',
+      borderRadius: '4px',
+      padding: '4px 8px',
+      cursor: 'pointer',
+      fontSize: '10px',
+      letterSpacing: '1px',
+      fontFamily: "'Courier New', monospace",
+      transition: 'all 0.3s',
     },
   };
 
@@ -344,9 +407,9 @@ function NetworkView({ onBack }) {
           onClick={() => {
             setShowPersonForm(!showPersonForm);
             setShowGroupForm(false);
+            setShowEditPersonForm(false);
+            setShowEditGroupForm(false);
           }}
-          onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(0, 255, 0, 0.1)'}
-          onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
         >
           {showPersonForm ? '[CLOSE]' : '[ADD PERSON]'}
         </button>
@@ -355,17 +418,15 @@ function NetworkView({ onBack }) {
           onClick={() => {
             setShowGroupForm(!showGroupForm);
             setShowPersonForm(false);
+            setShowEditPersonForm(false);
+            setShowEditGroupForm(false);
           }}
-          onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(0, 204, 255, 0.1)'}
-          onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
         >
           {showGroupForm ? '[CLOSE]' : '[CREATE GROUP]'}
         </button>
         <button 
           style={{...styles.button, borderColor: '#ff9900', color: '#ff9900'}}
           onClick={() => setViewMode(viewMode === 'list' ? 'graph' : 'list')}
-          onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(255, 153, 0, 0.1)'}
-          onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
         >
           [VIEW: {viewMode === 'list' ? 'LIST' : 'GRAPH'}]
         </button>
@@ -385,6 +446,29 @@ function NetworkView({ onBack }) {
         />
       )}
 
+      {showEditPersonForm && editingPerson && (
+        <EditPersonForm 
+          person={editingPerson}
+          onUpdatePerson={updatePerson}
+          onCancel={() => {
+            setShowEditPersonForm(false);
+            setEditingPerson(null);
+          }}
+        />
+      )}
+
+      {showEditGroupForm && editingGroup && (
+        <EditGroupForm 
+          group={editingGroup}
+          people={people}
+          onUpdateGroup={updateGroup}
+          onCancel={() => {
+            setShowEditGroupForm(false);
+            setEditingGroup(null);
+          }}
+        />
+      )}
+
       {viewMode === 'list' ? (
         <>
           <div style={styles.listContainer}>
@@ -397,16 +481,19 @@ function NetworkView({ onBack }) {
                 <div 
                   key={person.id}
                   style={styles.personCard}
-                  onClick={() => setSelectedPerson(person.id)}
-                  onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(0, 255, 0, 0.05)'}
-                  onMouseLeave={(e) => e.target.style.backgroundColor = 'rgba(0, 255, 0, 0.02)'}
                 >
                   <button 
-                    style={styles.deleteButton}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      deletePerson(person.id);
+                    style={styles.editButton}
+                    onClick={() => {
+                      setEditingPerson(person);
+                      setShowEditPersonForm(true);
                     }}
+                  >
+                    [EDIT]
+                  </button>
+                  <button 
+                    style={styles.deleteButton}
+                    onClick={() => deletePerson(person.id)}
                   >
                     [DEL]
                   </button>
@@ -443,8 +530,16 @@ function NetworkView({ onBack }) {
                 <div 
                   key={group.id}
                   style={styles.groupCard}
-                  onClick={() => setSelectedGroup(group.id)}
                 >
+                  <button 
+                    style={styles.editGroupButton}
+                    onClick={() => {
+                      setEditingGroup(group);
+                      setShowEditGroupForm(true);
+                    }}
+                  >
+                    [EDIT]
+                  </button>
                   <div style={styles.groupName}>{group.name}</div>
                   <div style={styles.groupMembers}>
                     Members: {group.people.length + (group.includeMe ? 1 : 0)}
@@ -461,6 +556,10 @@ function NetworkView({ onBack }) {
           groups={groups}
           onDeleteGroup={deleteGroup}
           onUpdateGroup={updateGroup}
+          onEditGroup={(group) => {
+            setEditingGroup(group);
+            setShowEditGroupForm(true);
+          }}
         />
       )}
     </div>
