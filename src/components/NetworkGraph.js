@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGroup }) {
+function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGroup, onEditGroup }) {
   const canvasRef = useRef(null);
   const [nodes, setNodes] = useState([]);
   const [draggedNode, setDraggedNode] = useState(null);
@@ -13,6 +13,8 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
   const [editingGroup, setEditingGroup] = useState(null);
   const [nodePositions, setNodePositions] = useState({});
   const [groupLabelPositions, setGroupLabelPositions] = useState({});
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     const savedPositions = localStorage.getItem('nodePositions');
@@ -96,12 +98,24 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     }));
   };
 
+  const handleZoom = (delta) => {
+    setZoomLevel(prev => {
+      const newZoom = prev + delta;
+      return Math.max(0.5, Math.min(2, newZoom));
+    });
+  };
+
   const drawGraph = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Applica zoom
+    ctx.save();
+    ctx.translate(panOffset.x, panOffset.y);
+    ctx.scale(zoomLevel, zoomLevel);
     
     drawGrid(ctx);
     
@@ -130,6 +144,8 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     });
     
     drawParticles(ctx);
+    
+    ctx.restore();
   };
 
   const drawGroupCircle = (ctx, group) => {
@@ -163,16 +179,14 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
       ctx.fill();
     }
     
-    // Salva la posizione del nome del gruppo
     const labelX = centerX;
     const labelY = centerY - maxRadius - 15;
     
     setGroupLabelPositions(prev => ({
       ...prev,
-      [group.id]: { x: labelX, y: labelY, width: ctx.measureText(group.name).width || 100 }
+      [group.id]: { x: labelX, y: labelY }
     }));
     
-    // Disegna il nome del gruppo
     ctx.fillStyle = isSelected ? '#ffffff' : '#00ccff';
     ctx.font = 'bold 14px Courier New';
     ctx.textAlign = 'center';
@@ -290,7 +304,7 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
 
   useEffect(() => {
     drawGraph();
-  }, [nodes, connections, animationFrame, hoveredNode, groups, selectedNode, selectedGroup, draggedNode]);
+  }, [nodes, connections, animationFrame, hoveredNode, groups, selectedNode, selectedGroup, draggedNode, zoomLevel, panOffset]);
 
   const handleMouseDown = (e) => {
     const canvas = canvasRef.current;
@@ -300,7 +314,7 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     const x = (e.clientX - rect.left) * scaleX;
     const y = (e.clientY - rect.top) * scaleY;
     
-    // PRIMA controlla se è stato cliccato il nome di un gruppo
+    // Controlla click sul nome del gruppo
     for (const group of groups) {
       const labelPos = groupLabelPositions[group.id];
       if (labelPos) {
@@ -316,7 +330,7 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
       }
     }
     
-    // POI controlla se è stato cliccato un nodo (SOLO sul pallino)
+    // Controlla click sul pallino
     for (const node of nodes) {
       const distance = Math.sqrt((node.x - x) ** 2 + (node.y - y) ** 2);
       if (distance <= node.radius + 5) {
@@ -328,7 +342,6 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
       }
     }
     
-    // Click su spazio vuoto
     setSelectedGroup(null);
     setShowGroupPanel(false);
     setSelectedNode(null);
@@ -352,6 +365,12 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     setDraggedNode(null);
   };
 
+  const handleWheel = (e) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -0.1 : 0.1;
+    handleZoom(delta);
+  };
+
   const styles = {
     container: {
       width: '100%',
@@ -373,6 +392,30 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
       borderRadius: '4px',
       border: '1px solid rgba(0, 255, 0, 0.3)',
       maxWidth: '100%',
+    },
+    zoomControls: {
+      position: 'absolute',
+      bottom: '60px',
+      right: '10px',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '5px',
+      zIndex: 15,
+    },
+    zoomButton: {
+      width: '35px',
+      height: '35px',
+      backgroundColor: 'rgba(0, 0, 0, 0.8)',
+      border: '1px solid #00ff00',
+      borderRadius: '4px',
+      color: '#00ff00',
+      fontSize: '18px',
+      cursor: 'pointer',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontFamily: "'Courier New', monospace",
+      transition: 'all 0.3s',
     },
     legend: {
       display: 'flex',
@@ -488,7 +531,27 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
+        onWheel={handleWheel}
       />
+      
+      <div style={styles.zoomControls}>
+        <button 
+          style={styles.zoomButton}
+          onClick={() => handleZoom(0.1)}
+          onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(0, 255, 0, 0.2)'}
+          onMouseLeave={(e) => e.target.style.backgroundColor = 'rgba(0, 0, 0, 0.8)'}
+        >
+          +
+        </button>
+        <button 
+          style={styles.zoomButton}
+          onClick={() => handleZoom(-0.1)}
+          onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(0, 255, 0, 0.2)'}
+          onMouseLeave={(e) => e.target.style.backgroundColor = 'rgba(0, 0, 0, 0.8)'}
+        >
+          -
+        </button>
+      </div>
       
       {showGroupPanel && editingGroup && (
         <div style={styles.groupPanel}>
@@ -502,14 +565,21 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
             <button 
               style={styles.groupPanelButton}
               onClick={() => {
-                alert('Modifica gruppo: ' + editingGroup.name);
+                onEditGroup(editingGroup);
+                setShowGroupPanel(false);
+                setSelectedGroup(null);
+                setEditingGroup(null);
               }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(0, 204, 255, 0.1)'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
             >
               [ EDIT ]
             </button>
             <button 
               style={styles.deleteGroupButton}
               onClick={() => onDeleteGroup(editingGroup.id)}
+              onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(255, 68, 68, 0.1)'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
             >
               [ DELETE ]
             </button>
@@ -520,6 +590,8 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
                 setSelectedGroup(null);
                 setEditingGroup(null);
               }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(102, 102, 102, 0.1)'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
             >
               [ BACK ]
             </button>
