@@ -59,8 +59,7 @@ function NetworkView({ onBack }) {
       
       if (response.ok) {
         const newPerson = await response.json();
-        setPeople([...people, newPerson]);
-        setShowPersonForm(false);
+        setPeople(prevPeople => [...prevPeople, newPerson]);
         
         if (personData.relationship) {
           await fetch('/api/network/connections', {
@@ -72,12 +71,21 @@ function NetworkView({ onBack }) {
               type: personData.relationship
             })
           });
-          fetchNetworkData();
         }
       }
     } catch (error) {
       console.error('Error adding person:', error);
     }
+  };
+
+  const addMultiplePeople = async (peopleArray) => {
+    setShowPersonForm(false);
+    
+    for (const personData of peopleArray) {
+      await addPerson(personData);
+    }
+    
+    await fetchNetworkData();
   };
 
   const updatePerson = async (personId, personData) => {
@@ -434,7 +442,7 @@ function NetworkView({ onBack }) {
 
       {showPersonForm && (
         <PersonForm 
-          onAddPerson={addPerson}
+          onAddPerson={addMultiplePeople}
           people={people}
         />
       )}
