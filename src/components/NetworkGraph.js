@@ -20,11 +20,7 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
   const [isMobile, setIsMobile] = useState(false);
   const [touchDistance, setTouchDistance] = useState(null);
-  
-  // Modalità: 'grab' o 'select'
   const [mode, setMode] = useState('grab');
-  
-  // Selezione multipla
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectionStart, setSelectionStart] = useState({ x: 0, y: 0 });
   const [selectionEnd, setSelectionEnd] = useState({ x: 0, y: 0 });
@@ -165,9 +161,7 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
   };
 
   const handleMultiNodeDrag = (dx, dy) => {
-    const allNodes = [...nodes, ...groupNodes];
     const selectedNodeIds = new Set(selectedNodes);
-    
     const newPositions = { ...nodePositions };
     
     setNodes(prevNodes =>
@@ -206,6 +200,31 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
 
   const isPersonInGroup = (personId) => {
     return groups.some(group => group.people.includes(personId));
+  };
+
+  const getWorldCoordinates = (e) => {
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
+    let clientX, clientY;
+    
+    if (e.touches) {
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else {
+      clientX = e.clientX;
+      clientY = e.clientY;
+    }
+    
+    const screenX = (clientX - rect.left) * scaleX;
+    const screenY = (clientY - rect.top) * scaleY;
+    
+    return {
+      x: (screenX - panOffset.x) / zoomLevel,
+      y: (screenY - panOffset.y) / zoomLevel
+    };
   };
 
   const drawGraph = () => {
@@ -269,7 +288,6 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
       drawNode(ctx, node);
     });
     
-    // Disegna rettangolo di selezione
     if (isSelecting) {
       const minX = Math.min(selectionStart.x, selectionEnd.x);
       const minY = Math.min(selectionStart.y, selectionEnd.y);
@@ -498,54 +516,21 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     drawGraph();
   }, [nodes, groupNodes, connections, animationFrame, hoveredNode, groups, selectedNode, selectedGroup, draggedNode, zoomLevel, panOffset, isMobile, isSelecting, selectionStart, selectionEnd, selectedNodes, mode]);
 
-  const getWorldCoordinates = (e) => {
-    const canvas = canvasRef.current;
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    
-    let clientX, clientY;
-    
-    if (e.touches) {
-      clientX = e.touches[0].clientX;
-      clientY = e.touches[0].clientY;
-    } else {
-      clientX = e.clientX;
-      clientY = e.clientY;
-    }
-    
-    const screenX = (clientX - rect.left) * scaleX;
-    const screenY = (clientY - rect.top) * scaleY;
-    
-    return {
-      x: (screenX - panOffset.x) / zoomLevel,
-      y: (screenY - panOffset.y) / zoomLevel
-    };
-  };
-
   const handleMouseDown = (e) => {
     e.preventDefault();
     
     if (mode === 'select') {
-      // Modalità selezione
-      const canvas = canvasRef.current;
-      const rect = canvas.getBoundingClientRect();
-      const scaleX = canvas.width / rect.width;
-      const scaleY = canvas.height / rect.height;
-      const x = (e.clientX - rect.left) * scaleX;
-      const y = (e.clientY - rect.top) * scaleY;
+      const world = getWorldCoordinates(e);
       
       setIsSelecting(true);
-      setSelectionStart({ x, y });
-      setSelectionEnd({ x, y });
+      setSelectionStart({ x: world.x, y: world.y });
+      setSelectionEnd({ x: world.x, y: world.y });
       setSelectedNodes([]);
       return;
     }
     
-    // Modalità grab
     const world = getWorldCoordinates(e);
     
-    // Controlla click sul nome del gruppo
     for (const group of groups) {
       const labelPos = groupLabelPositions[group.id];
       if (labelPos) {
@@ -562,7 +547,6 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
       }
     }
     
-    // Controlla click sui nodi gruppo
     for (const groupNode of groupNodes) {
       const distance = Math.sqrt((groupNode.x - world.x) ** 2 + (groupNode.y - world.y) ** 2);
       if (distance <= groupNode.radius + 5) {
@@ -576,7 +560,6 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
       }
     }
     
-    // Controlla click sui nodi persona
     for (const node of nodes) {
       const distance = Math.sqrt((node.x - world.x) ** 2 + (node.y - world.y) ** 2);
       if (distance <= node.radius + 5) {
@@ -589,7 +572,6 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
       }
     }
     
-    // Pan
     setIsPanning(true);
     setPanStart({ 
       x: (e.touches ? e.touches[0].clientX : e.clientX) - panOffset.x, 
@@ -605,20 +587,14 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     e.preventDefault();
     
     if (isSelecting && mode === 'select') {
-      const canvas = canvasRef.current;
-      const rect = canvas.getBoundingClientRect();
-      const scaleX = canvas.width / rect.width;
-      const scaleY = canvas.height / rect.height;
-      const x = (e.clientX - rect.left) * scaleX;
-      const y = (e.clientY - rect.top) * scaleY;
+      const world = getWorldCoordinates(e);
       
-      setSelectionEnd({ x, y });
+      setSelectionEnd({ x: world.x, y: world.y });
       
-      // Calcola nodi selezionati
-      const minX = Math.min(selectionStart.x, x);
-      const minY = Math.min(selectionStart.y, y);
-      const maxX = Math.max(selectionStart.x, x);
-      const maxY = Math.max(selectionStart.y, y);
+      const minX = Math.min(selectionStart.x, world.x);
+      const minY = Math.min(selectionStart.y, world.y);
+      const maxX = Math.max(selectionStart.x, world.x);
+      const maxY = Math.max(selectionStart.y, world.y);
       
       const allNodes = [...nodes, ...groupNodes];
       const selected = allNodes.filter(node => {
@@ -646,14 +622,6 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
   const handleMouseUp = () => {
     if (isSelecting && mode === 'select') {
       setIsSelecting(false);
-      
-      if (selectedNodes.length > 0) {
-        // Switch to grab mode for dragging selection
-        setMode('grab');
-        setIsDraggingSelection(true);
-        const world = getWorldCoordinates({ clientX: selectionEnd.x, clientY: selectionEnd.y });
-        setDragStartPos({ x: world.x, y: world.y });
-      }
     }
     
     setDraggedNode(null);
