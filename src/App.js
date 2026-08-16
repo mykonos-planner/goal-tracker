@@ -316,7 +316,7 @@ function App() {
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
-      gap: isMobile ? '5px' : '15px',
+      gap: isMobile ? '5px' : '10px',
       marginBottom: '20px',
       flexWrap: 'nowrap',
       padding: isMobile ? '8px' : '15px',
@@ -327,23 +327,21 @@ function App() {
       boxSizing: 'border-box',
     },
     button: {
-      padding: isMobile ? '10px 14px' : '12px 24px',
-      fontSize: isMobile ? '10px' : '14px',
+      padding: isMobile ? '10px 12px' : '10px 20px',
+      fontSize: isMobile ? '9px' : '12px',
       border: '1px solid #00ff00',
       borderRadius: '4px',
       cursor: 'pointer',
-      fontWeight: 'bold',
-      transition: 'all 0.3s',
       backgroundColor: 'transparent',
       color: '#00ff00',
-      letterSpacing: isMobile ? '0.5px' : '1px',
-      textTransform: 'uppercase',
+      letterSpacing: '1px',
       fontFamily: "'Courier New', monospace",
-      whiteSpace: 'nowrap',
-      flex: isMobile ? '1' : '0 0 auto',
-      minWidth: '0',
-      textAlign: 'center',
+      transition: 'all 0.3s',
+      textTransform: 'uppercase',
       minHeight: isMobile ? '40px' : 'auto',
+      flex: isMobile ? '1' : '0 0 auto',
+      whiteSpace: 'nowrap',
+      fontWeight: 'bold',
     },
     dropdownContainer: {
       position: 'relative',
@@ -558,7 +556,7 @@ function App() {
           style={{...styles.button, borderColor: '#00ff00'}}
           onClick={() => setShowAddGoal(!showAddGoal)}
         >
-          {showAddGoal ? '[CLOSE]' : isMobile ? '[NEW]' : '[NEW TASK]'}
+          {showAddGoal ? '[CLOSE]' : '[NEW TASK]'}
         </button>
 
         <div style={styles.dropdownContainer}>
@@ -566,7 +564,7 @@ function App() {
             style={{...styles.button, borderColor: '#ff9900', width: '100%'}}
             onClick={() => setShowViewMenu(!showViewMenu)}
           >
-            {isMobile ? '[VIEW]' : '[VIEW: ' + (viewMode === 'progress' ? 'PROGRESS' : viewMode === 'calendar' ? 'CALENDAR' : 'TODAY') + ']'} ▼
+            [VIEW: {viewMode === 'progress' ? 'PROG' : viewMode === 'calendar' ? 'CAL' : 'TODAY'}] ▼
           </button>
           {showViewMenu && (
             <div style={styles.dropdownMenu}>
@@ -605,7 +603,7 @@ function App() {
           style={{...styles.button, borderColor: '#ff4444', color: '#ff4444'}}
           onClick={() => setShowDeleteAll(!showDeleteAll)}
         >
-          {showDeleteAll ? '[CANCEL]' : isMobile ? '[PURGE]' : '[PURGE ALL]'}
+          {showDeleteAll ? '[CANCEL]' : '[PURGE ALL]'}
         </button>
       </div>
 
