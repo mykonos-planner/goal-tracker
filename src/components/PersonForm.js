@@ -33,17 +33,15 @@ function PersonForm({ onAddPerson, people }) {
       return;
     }
     
-    validPeople.forEach(person => {
-      const personData = {
-        name: person.name.trim(),
-        surname: person.surname.trim(),
-        relationship: person.relationship,
-        metWhen: useCommonData ? commonMetWhen.trim() : person.metWhen.trim(),
-        why: useCommonData ? commonWhy.trim() : person.why.trim(),
-      };
-      
-      onAddPerson(personData);
-    });
+    const peopleToAdd = validPeople.map(person => ({
+      name: person.name.trim(),
+      surname: person.surname.trim(),
+      relationship: person.relationship,
+      metWhen: useCommonData ? commonMetWhen.trim() : person.metWhen.trim(),
+      why: useCommonData ? commonWhy.trim() : person.why.trim(),
+    }));
+    
+    onAddPerson(peopleToAdd);
     
     setPeopleList([{ name: '', surname: '', relationship: 'friend', metWhen: '', why: '' }]);
     setCommonMetWhen('');
@@ -151,7 +149,7 @@ function PersonForm({ onAddPerson, people }) {
       cursor: 'pointer',
       fontSize: '10px',
       letterSpacing: '1px',
-      fontFamily: "'Courier New', monospace',
+      fontFamily: "'Courier New', monospace",
       transition: 'all 0.3s',
       marginBottom: '10px',
     },
@@ -169,6 +167,9 @@ function PersonForm({ onAddPerson, people }) {
       fontWeight: 'bold',
       marginBottom: '10px',
       letterSpacing: '1px',
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
     },
     checkboxContainer: {
       display: 'flex',
@@ -204,6 +205,8 @@ function PersonForm({ onAddPerson, people }) {
     },
   };
 
+  const validCount = peopleList.filter(p => p.name.trim() && p.surname.trim()).length;
+
   return (
     <form onSubmit={handleSubmit} style={styles.form}>
       <h2 style={{marginBottom: '15px', color: '#00ff00', letterSpacing: '2px', fontSize: '16px'}}>
@@ -235,7 +238,7 @@ function PersonForm({ onAddPerson, people }) {
             style={styles.input}
           />
           
-          <label style={styles.label}>Perché li ho conosciuti:</label>
+          <label style={styles.label}>Perche li ho conosciuti:</label>
           <textarea
             value={commonWhy}
             onChange={(e) => setCommonWhy(e.target.value)}
@@ -248,16 +251,12 @@ function PersonForm({ onAddPerson, people }) {
       {peopleList.map((person, index) => (
         <div key={index} style={styles.personCard}>
           <div style={styles.personTitle}>
-            [ PERSONA {index + 1} ]
+            <span>[ PERSONA {index + 1} ]</span>
             {peopleList.length > 1 && (
               <button
                 type="button"
                 onClick={() => handleRemovePerson(index)}
-                style={{
-                  ...styles.removeButton,
-                  float: 'right',
-                  marginBottom: '0',
-                }}
+                style={styles.removeButton}
               >
                 [RIMUOVI]
               </button>
@@ -299,7 +298,7 @@ function PersonForm({ onAddPerson, people }) {
           
           {!useCommonData && (
             <>
-              <label style={styles.label}>Quando l'ho conosciuto:</label>
+              <label style={styles.label}>Quando lo conosciuto:</label>
               <input
                 type="text"
                 value={person.metWhen}
@@ -308,7 +307,7 @@ function PersonForm({ onAddPerson, people }) {
                 style={styles.input}
               />
               
-              <label style={styles.label}>Perché l'ho conosciuto:</label>
+              <label style={styles.label}>Perche lo conosciuto:</label>
               <textarea
                 value={person.why}
                 onChange={(e) => handlePersonChange(index, 'why', e.target.value)}
@@ -336,7 +335,7 @@ function PersonForm({ onAddPerson, people }) {
         onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(0, 255, 0, 0.2)'}
         onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
       >
-        [ SALVA {peopleList.filter(p => p.name.trim() && p.surname.trim()).length} PERSONE ]
+        [ SALVA {validCount} PERSONE ]
       </button>
     </form>
   );
