@@ -20,6 +20,14 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
   const [isMobile, setIsMobile] = useState(false);
   const [touchDistance, setTouchDistance] = useState(null);
+  
+  // Selezione multipla
+  const [isSelecting, setIsSelecting] = useState(false);
+  const [selectionStart, setSelectionStart] = useState({ x: 0, y: 0 });
+  const [selectionEnd, setSelectionEnd] = useState({ x: 0, y: 0 });
+  const [selectedNodes, setSelectedNodes] = useState([]);
+  const [isDraggingSelection, setIsDraggingSelection] = useState(false);
+  const [dragStartPos, setDragStartPos] = useState(null);
 
   useEffect(() => {
     const savedPositions = localStorage.getItem('nodePositions');
@@ -153,6 +161,39 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     }
   };
 
+  const handleMultiNodeDrag = (dx, dy) => {
+    const allNodes = [...nodes, ...groupNodes];
+    const selectedNodeIds = new Set(selectedNodes);
+    
+    const newPositions = { ...nodePositions };
+    
+    setNodes(prevNodes =>
+      prevNodes.map(node => {
+        if (selectedNodeIds.has(node.id)) {
+          const newX = node.x + dx;
+          const newY = node.y + dy;
+          newPositions[node.id] = { x: newX, y: newY };
+          return { ...node, x: newX, y: newY };
+        }
+        return node;
+      })
+    );
+    
+    setGroupNodes(prevNodes =>
+      prevNodes.map(node => {
+        if (selectedNodeIds.has(node.id)) {
+          const newX = node.x + dx;
+          const newY = node.y + dy;
+          newPositions[node.id] = { x: newX, y: newY };
+          return { ...node, x: newX, y: newY };
+        }
+        return node;
+      })
+    );
+    
+    setNodePositions(newPositions);
+  };
+
   const handleZoom = (delta) => {
     setZoomLevel(prev => {
       const newZoom = prev + delta;
@@ -160,7 +201,6 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     });
   };
 
-  // Funzione per capire se una persona è in un gruppo
   const isPersonInGroup = (personId) => {
     return groups.some(group => group.people.includes(personId));
   };
@@ -183,13 +223,11 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     
     const meNode = nodes.find(n => n.id === 'me');
     
-    // Disegna connessioni tra persone che NON sono in gruppi (connessioni dirette)
     connections.forEach((connection, index) => {
       const fromNode = nodes.find(n => n.id === connection.from);
       const toNode = nodes.find(n => n.id === connection.to);
       
       if (fromNode && toNode) {
-        // Salta se uno dei due è in un gruppo
         if (isPersonInGroup(connection.from) || isPersonInGroup(connection.to)) {
           return;
         }
@@ -197,24 +235,20 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
       }
     });
     
-    // Disegna connessioni da ME alle persone che NON sono in gruppi
     if (meNode) {
       nodes.filter(n => n.id !== 'me' && !isPersonInGroup(n.id)).forEach((node, index) => {
         drawNeuralConnection(ctx, meNode, node, node.type, index + 1000);
       });
     }
     
-    // Disegna connessioni dai gruppi
     groupNodes.forEach((groupNode, groupIndex) => {
       const group = groupNode.groupData;
       
-      // UNICO collegamento da ME al gruppo (verde se includeMe, grigio se no)
       if (meNode) {
         const connectionColor = group.includeMe ? '#00ff00' : '#666666';
         drawGroupConnection(ctx, meNode, groupNode, connectionColor, groupIndex + 2000);
       }
       
-      // Collegamenti dal gruppo ai membri con colore basato sulla MIA relazione con loro
       group.people.forEach((personId, memberIndex) => {
         const memberNode = nodes.find(n => n.id === personId);
         if (memberNode) {
@@ -224,15 +258,30 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
       });
     });
     
-    // Disegna nodi gruppo
     groupNodes.forEach(groupNode => {
       drawGroupNode(ctx, groupNode);
     });
     
-    // Disegna nodi persona
     nodes.forEach(node => {
       drawNode(ctx, node);
     });
+    
+    // Disegna rettangolo di selezione
+    if (isSelecting) {
+      const minX = Math.min(selectionStart.x, selectionEnd.x);
+      const minY = Math.min(selectionStart.y, selectionEnd.y);
+      const maxX = Math.max(selectionStart.x, selectionEnd.x);
+      const maxY = Math.max(selectionStart.y, selectionEnd.y);
+      
+      ctx.fillStyle = 'rgba(0, 255, 0, 0.1)';
+      ctx.fillRect(minX, minY, maxX - minX, maxY - minY);
+      
+      ctx.strokeStyle = '#00ff00';
+      ctx.lineWidth = 2 / zoomLevel;
+      ctx.setLineDash([5, 5]);
+      ctx.strokeRect(minX, minY, maxX - minX, maxY - minY);
+      ctx.setLineDash([]);
+    }
     
     drawParticles(ctx);
     
@@ -334,7 +383,7 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
 
   const drawNode = (ctx, node) => {
     const pulseIntensity = Math.sin(animationFrame * 0.03 + node.pulse) * 0.3 + 0.7;
-    const isSelected = selectedNode === node.id;
+    const isSelected = selectedNode === node.id || selectedNodes.includes(node.id);
     const isDragged = draggedNode === node.id;
     
     ctx.beginPath();
@@ -351,7 +400,7 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     ctx.arc(node.x, node.y, node.radius, 0, 2 * Math.PI);
     ctx.fillStyle = gradient;
     ctx.shadowColor = node.color;
-    ctx.shadowBlur = isDragged ? 30 : 20 * pulseIntensity;
+    ctx.shadowBlur = isDragged || isSelected ? 30 : 20 * pulseIntensity;
     ctx.fill();
     
     ctx.beginPath();
@@ -379,7 +428,7 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
 
   const drawGroupNode = (ctx, node) => {
     const pulseIntensity = Math.sin(animationFrame * 0.03 + node.pulse) * 0.3 + 0.7;
-    const isSelected = selectedGroup === node.groupId;
+    const isSelected = selectedGroup === node.groupId || selectedNodes.includes(node.id);
     const isDragged = draggedNode === node.id;
     
     ctx.beginPath();
@@ -398,7 +447,7 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     ctx.arc(node.x, node.y, node.radius, 0, 2 * Math.PI);
     ctx.fillStyle = gradient;
     ctx.shadowColor = '#00ccff';
-    ctx.shadowBlur = isDragged ? 30 : 15 * pulseIntensity;
+    ctx.shadowBlur = isDragged || isSelected ? 30 : 15 * pulseIntensity;
     ctx.fill();
     
     ctx.beginPath();
@@ -444,7 +493,7 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
 
   useEffect(() => {
     drawGraph();
-  }, [nodes, groupNodes, connections, animationFrame, hoveredNode, groups, selectedNode, selectedGroup, draggedNode, zoomLevel, panOffset, isMobile]);
+  }, [nodes, groupNodes, connections, animationFrame, hoveredNode, groups, selectedNode, selectedGroup, draggedNode, zoomLevel, panOffset, isMobile, isSelecting, selectionStart, selectionEnd, selectedNodes]);
 
   const getCoordinates = (e) => {
     const canvas = canvasRef.current;
@@ -472,6 +521,7 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     e.preventDefault();
     const { x, y } = getCoordinates(e);
     
+    // Controlla click sul nome del gruppo
     for (const group of groups) {
       const labelPos = groupLabelPositions[group.id];
       if (labelPos) {
@@ -484,11 +534,13 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
           setEditingGroup(group);
           setSelectedNode(null);
           setDraggedNode(null);
+          setSelectedNodes([]);
           return;
         }
       }
     }
     
+    // Controlla click sui nodi gruppo
     for (const groupNode of groupNodes) {
       const adjustedX = groupNode.x * zoomLevel + panOffset.x;
       const adjustedY = groupNode.y * zoomLevel + panOffset.y;
@@ -500,10 +552,12 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
         setShowGroupPanel(true);
         setEditingGroup(groupNode.groupData);
         setSelectedNode(null);
+        setSelectedNodes([]);
         return;
       }
     }
     
+    // Controlla click sui nodi persona
     for (const node of nodes) {
       const adjustedX = node.x * zoomLevel + panOffset.x;
       const adjustedY = node.y * zoomLevel + panOffset.y;
@@ -514,15 +568,26 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
         setSelectedNode(node.id);
         setSelectedGroup(null);
         setShowGroupPanel(false);
+        setSelectedNodes([]);
         return;
       }
     }
     
-    setIsPanning(true);
-    setPanStart({ 
-      x: (e.touches ? e.touches[0].clientX : e.clientX) - panOffset.x, 
-      y: (e.touches ? e.touches[0].clientY : e.clientY) - panOffset.y 
-    });
+    // Inizia selezione rettangolare (solo desktop)
+    if (!isMobile) {
+      setIsSelecting(true);
+      setSelectionStart({ x, y });
+      setSelectionEnd({ x, y });
+      setSelectedNodes([]);
+    } else {
+      // Su mobile, pan
+      setIsPanning(true);
+      setPanStart({ 
+        x: (e.touches ? e.touches[0].clientX : e.clientX) - panOffset.x, 
+        y: (e.touches ? e.touches[0].clientY : e.clientY) - panOffset.y 
+      });
+    }
+    
     setSelectedGroup(null);
     setShowGroupPanel(false);
     setSelectedNode(null);
@@ -539,6 +604,32 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
       
       const isGroupNode = draggedNode.indexOf('group_') === 0;
       handleNodeDrag(draggedNode, worldX, worldY, isGroupNode);
+    } else if (isDraggingSelection && selectedNodes.length > 0) {
+      const { x, y } = getCoordinates(e);
+      const worldX = (x - panOffset.x) / zoomLevel;
+      const worldY = (y - panOffset.y) / zoomLevel;
+      
+      const dx = worldX - dragStartPos.x;
+      const dy = worldY - dragStartPos.y;
+      
+      handleMultiNodeDrag(dx, dy);
+      setDragStartPos({ x: worldX, y: worldY });
+    } else if (isSelecting) {
+      const { x, y } = getCoordinates(e);
+      setSelectionEnd({ x, y });
+      
+      // Calcola nodi selezionati
+      const minX = Math.min(selectionStart.x, x);
+      const minY = Math.min(selectionStart.y, y);
+      const maxX = Math.max(selectionStart.x, x);
+      const maxY = Math.max(selectionStart.y, y);
+      
+      const allNodes = [...nodes, ...groupNodes];
+      const selected = allNodes.filter(node => {
+        return node.x >= minX && node.x <= maxX && node.y >= minY && node.y <= maxY;
+      }).map(node => node.id);
+      
+      setSelectedNodes(selected);
     } else if (isPanning) {
       const clientX = e.touches ? e.touches[0].clientX : e.clientX;
       const clientY = e.touches ? e.touches[0].clientY : e.clientY;
@@ -550,8 +641,26 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
   };
 
   const handleMouseUp = () => {
+    if (isSelecting && selectedNodes.length > 1) {
+      // Inizia il drag della selezione
+      setIsDraggingSelection(true);
+      const { x, y } = selectionEnd;
+      const worldX = (x - panOffset.x) / zoomLevel;
+      const worldY = (y - panOffset.y) / zoomLevel;
+      setDragStartPos({ x: worldX, y: worldY });
+    }
+    
     setDraggedNode(null);
     setIsPanning(false);
+    setIsSelecting(false);
+  };
+
+  const handleClick = (e) => {
+    // Se non c'è selezione multipla, deseleziona
+    if (selectedNodes.length > 0 && !isDraggingSelection) {
+      setSelectedNodes([]);
+    }
+    setIsDraggingSelection(false);
   };
 
   const handleTouchStart = (e) => {
@@ -603,7 +712,7 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     canvas: {
       width: '100%',
       height: 'auto',
-      cursor: draggedNode ? 'grabbing' : isPanning ? 'grabbing' : 'grab',
+      cursor: draggedNode ? 'grabbing' : isSelecting ? 'crosshair' : isPanning ? 'grabbing' : 'grab',
       display: 'block',
       backgroundColor: '#0a0a0a',
       borderRadius: '4px',
@@ -736,6 +845,7 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
+        onClick={handleClick}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleMouseUp}
