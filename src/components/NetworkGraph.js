@@ -21,6 +21,9 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
   const [isMobile, setIsMobile] = useState(false);
   const [touchDistance, setTouchDistance] = useState(null);
   
+  // Modalità: 'grab' o 'select'
+  const [mode, setMode] = useState('grab');
+  
   // Selezione multipla
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectionStart, setSelectionStart] = useState({ x: 0, y: 0 });
@@ -493,9 +496,9 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
 
   useEffect(() => {
     drawGraph();
-  }, [nodes, groupNodes, connections, animationFrame, hoveredNode, groups, selectedNode, selectedGroup, draggedNode, zoomLevel, panOffset, isMobile, isSelecting, selectionStart, selectionEnd, selectedNodes]);
+  }, [nodes, groupNodes, connections, animationFrame, hoveredNode, groups, selectedNode, selectedGroup, draggedNode, zoomLevel, panOffset, isMobile, isSelecting, selectionStart, selectionEnd, selectedNodes, mode]);
 
-  const getCoordinates = (e) => {
+  const getWorldCoordinates = (e) => {
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
@@ -511,24 +514,43 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
       clientY = e.clientY;
     }
     
+    const screenX = (clientX - rect.left) * scaleX;
+    const screenY = (clientY - rect.top) * scaleY;
+    
     return {
-      x: (clientX - rect.left) * scaleX,
-      y: (clientY - rect.top) * scaleY
+      x: (screenX - panOffset.x) / zoomLevel,
+      y: (screenY - panOffset.y) / zoomLevel
     };
   };
 
   const handleMouseDown = (e) => {
     e.preventDefault();
-    const { x, y } = getCoordinates(e);
+    
+    if (mode === 'select') {
+      // Modalità selezione
+      const canvas = canvasRef.current;
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const x = (e.clientX - rect.left) * scaleX;
+      const y = (e.clientY - rect.top) * scaleY;
+      
+      setIsSelecting(true);
+      setSelectionStart({ x, y });
+      setSelectionEnd({ x, y });
+      setSelectedNodes([]);
+      return;
+    }
+    
+    // Modalità grab
+    const world = getWorldCoordinates(e);
     
     // Controlla click sul nome del gruppo
     for (const group of groups) {
       const labelPos = groupLabelPositions[group.id];
       if (labelPos) {
-        const adjustedX = labelPos.x * zoomLevel + panOffset.x;
-        const adjustedY = labelPos.y * zoomLevel + panOffset.y;
-        const distance = Math.sqrt((adjustedX - x) ** 2 + (adjustedY - y) ** 2);
-        if (distance < 30 * zoomLevel) {
+        const distance = Math.sqrt((labelPos.x - world.x) ** 2 + (labelPos.y - world.y) ** 2);
+        if (distance < 30) {
           setSelectedGroup(group.id);
           setShowGroupPanel(true);
           setEditingGroup(group);
@@ -542,11 +564,8 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     
     // Controlla click sui nodi gruppo
     for (const groupNode of groupNodes) {
-      const adjustedX = groupNode.x * zoomLevel + panOffset.x;
-      const adjustedY = groupNode.y * zoomLevel + panOffset.y;
-      const adjustedRadius = groupNode.radius * zoomLevel;
-      const distance = Math.sqrt((adjustedX - x) ** 2 + (adjustedY - y) ** 2);
-      if (distance <= adjustedRadius + 5) {
+      const distance = Math.sqrt((groupNode.x - world.x) ** 2 + (groupNode.y - world.y) ** 2);
+      if (distance <= groupNode.radius + 5) {
         setDraggedNode(groupNode.id);
         setSelectedGroup(groupNode.groupId);
         setShowGroupPanel(true);
@@ -559,11 +578,8 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     
     // Controlla click sui nodi persona
     for (const node of nodes) {
-      const adjustedX = node.x * zoomLevel + panOffset.x;
-      const adjustedY = node.y * zoomLevel + panOffset.y;
-      const adjustedRadius = node.radius * zoomLevel;
-      const distance = Math.sqrt((adjustedX - x) ** 2 + (adjustedY - y) ** 2);
-      if (distance <= adjustedRadius + 5) {
+      const distance = Math.sqrt((node.x - world.x) ** 2 + (node.y - world.y) ** 2);
+      if (distance <= node.radius + 5) {
         setDraggedNode(node.id);
         setSelectedNode(node.id);
         setSelectedGroup(null);
@@ -573,21 +589,12 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
       }
     }
     
-    // Inizia selezione rettangolare (solo desktop)
-    if (!isMobile) {
-      setIsSelecting(true);
-      setSelectionStart({ x, y });
-      setSelectionEnd({ x, y });
-      setSelectedNodes([]);
-    } else {
-      // Su mobile, pan
-      setIsPanning(true);
-      setPanStart({ 
-        x: (e.touches ? e.touches[0].clientX : e.clientX) - panOffset.x, 
-        y: (e.touches ? e.touches[0].clientY : e.clientY) - panOffset.y 
-      });
-    }
-    
+    // Pan
+    setIsPanning(true);
+    setPanStart({ 
+      x: (e.touches ? e.touches[0].clientX : e.clientX) - panOffset.x, 
+      y: (e.touches ? e.touches[0].clientY : e.clientY) - panOffset.y 
+    });
     setSelectedGroup(null);
     setShowGroupPanel(false);
     setSelectedNode(null);
@@ -597,25 +604,14 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
   const handleMouseMove = (e) => {
     e.preventDefault();
     
-    if (draggedNode) {
-      const { x, y } = getCoordinates(e);
-      const worldX = (x - panOffset.x) / zoomLevel;
-      const worldY = (y - panOffset.y) / zoomLevel;
+    if (isSelecting && mode === 'select') {
+      const canvas = canvasRef.current;
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const x = (e.clientX - rect.left) * scaleX;
+      const y = (e.clientY - rect.top) * scaleY;
       
-      const isGroupNode = draggedNode.indexOf('group_') === 0;
-      handleNodeDrag(draggedNode, worldX, worldY, isGroupNode);
-    } else if (isDraggingSelection && selectedNodes.length > 0) {
-      const { x, y } = getCoordinates(e);
-      const worldX = (x - panOffset.x) / zoomLevel;
-      const worldY = (y - panOffset.y) / zoomLevel;
-      
-      const dx = worldX - dragStartPos.x;
-      const dy = worldY - dragStartPos.y;
-      
-      handleMultiNodeDrag(dx, dy);
-      setDragStartPos({ x: worldX, y: worldY });
-    } else if (isSelecting) {
-      const { x, y } = getCoordinates(e);
       setSelectionEnd({ x, y });
       
       // Calcola nodi selezionati
@@ -630,6 +626,13 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
       }).map(node => node.id);
       
       setSelectedNodes(selected);
+      return;
+    }
+    
+    if (draggedNode) {
+      const world = getWorldCoordinates(e);
+      const isGroupNode = draggedNode.indexOf('group_') === 0;
+      handleNodeDrag(draggedNode, world.x, world.y, isGroupNode);
     } else if (isPanning) {
       const clientX = e.touches ? e.touches[0].clientX : e.clientX;
       const clientY = e.touches ? e.touches[0].clientY : e.clientY;
@@ -641,22 +644,23 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
   };
 
   const handleMouseUp = () => {
-    if (isSelecting && selectedNodes.length > 1) {
-      // Inizia il drag della selezione
-      setIsDraggingSelection(true);
-      const { x, y } = selectionEnd;
-      const worldX = (x - panOffset.x) / zoomLevel;
-      const worldY = (y - panOffset.y) / zoomLevel;
-      setDragStartPos({ x: worldX, y: worldY });
+    if (isSelecting && mode === 'select') {
+      setIsSelecting(false);
+      
+      if (selectedNodes.length > 0) {
+        // Switch to grab mode for dragging selection
+        setMode('grab');
+        setIsDraggingSelection(true);
+        const world = getWorldCoordinates({ clientX: selectionEnd.x, clientY: selectionEnd.y });
+        setDragStartPos({ x: world.x, y: world.y });
+      }
     }
     
     setDraggedNode(null);
     setIsPanning(false);
-    setIsSelecting(false);
   };
 
-  const handleClick = (e) => {
-    // Se non c'è selezione multipla, deseleziona
+  const handleClick = () => {
     if (selectedNodes.length > 0 && !isDraggingSelection) {
       setSelectedNodes([]);
     }
@@ -712,7 +716,7 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     canvas: {
       width: '100%',
       height: 'auto',
-      cursor: draggedNode ? 'grabbing' : isSelecting ? 'crosshair' : isPanning ? 'grabbing' : 'grab',
+      cursor: mode === 'select' ? 'crosshair' : draggedNode ? 'grabbing' : isPanning ? 'grabbing' : 'grab',
       display: 'block',
       backgroundColor: '#0a0a0a',
       borderRadius: '4px',
@@ -720,7 +724,7 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
       maxWidth: '100%',
       touchAction: 'none',
     },
-    zoomControls: {
+    controlsPanel: {
       position: 'absolute',
       bottom: isMobile ? '50px' : '70px',
       right: isMobile ? '15px' : '30px',
@@ -728,6 +732,39 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
       flexDirection: 'column',
       gap: '5px',
       zIndex: 15,
+    },
+    modeButton: {
+      width: isMobile ? '40px' : '35px',
+      height: isMobile ? '40px' : '35px',
+      backgroundColor: 'rgba(0, 0, 0, 0.8)',
+      border: '1px solid #00ff00',
+      borderRadius: '4px',
+      color: '#00ff00',
+      fontSize: isMobile ? '16px' : '14px',
+      cursor: 'pointer',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontFamily: "'Courier New', monospace",
+      transition: 'all 0.3s',
+      fontWeight: 'bold',
+    },
+    modeButtonActive: {
+      width: isMobile ? '40px' : '35px',
+      height: isMobile ? '40px' : '35px',
+      backgroundColor: 'rgba(0, 255, 0, 0.3)',
+      border: '1px solid #00ff00',
+      borderRadius: '4px',
+      color: '#ffffff',
+      fontSize: isMobile ? '16px' : '14px',
+      cursor: 'pointer',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontFamily: "'Courier New', monospace",
+      transition: 'all 0.3s',
+      fontWeight: 'bold',
+      boxShadow: '0 0 10px rgba(0, 255, 0, 0.5)',
     },
     zoomButton: {
       width: isMobile ? '40px' : '35px',
@@ -851,7 +888,18 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
         onTouchEnd={handleMouseUp}
       />
       
-      <div style={styles.zoomControls}>
+      <div style={styles.controlsPanel}>
+        <button 
+          style={mode === 'select' ? styles.modeButtonActive : styles.modeButton}
+          onClick={() => {
+            setMode(mode === 'select' ? 'grab' : 'select');
+            setSelectedNodes([]);
+            setIsSelecting(false);
+          }}
+          title={mode === 'select' ? 'Switch to Grab Mode' : 'Switch to Select Mode'}
+        >
+          {mode === 'select' ? '✥' : '✋'}
+        </button>
         <button 
           style={styles.zoomButton}
           onClick={() => handleZoom(0.1)}
