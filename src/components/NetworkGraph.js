@@ -519,6 +519,25 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
   const handleMouseDown = (e) => {
     e.preventDefault();
     
+    // Se ci sono nodi selezionati e sei in modalità grab, inizia il drag multiplo
+    if (selectedNodes.length > 0 && mode === 'grab') {
+      const world = getWorldCoordinates(e);
+      
+      // Controlla se hai cliccato su uno dei nodi selezionati
+      const allNodes = [...nodes, ...groupNodes];
+      const clickedOnSelected = allNodes.some(node => {
+        if (!selectedNodes.includes(node.id)) return false;
+        const distance = Math.sqrt((node.x - world.x) ** 2 + (node.y - world.y) ** 2);
+        return distance <= node.radius + 10;
+      });
+      
+      if (clickedOnSelected) {
+        setIsDraggingSelection(true);
+        setDragStartPos({ x: world.x, y: world.y });
+        return;
+      }
+    }
+    
     if (mode === 'select') {
       const world = getWorldCoordinates(e);
       
@@ -531,6 +550,7 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     
     const world = getWorldCoordinates(e);
     
+    // Controlla click sul nome del gruppo
     for (const group of groups) {
       const labelPos = groupLabelPositions[group.id];
       if (labelPos) {
@@ -547,6 +567,7 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
       }
     }
     
+    // Controlla click sui nodi gruppo
     for (const groupNode of groupNodes) {
       const distance = Math.sqrt((groupNode.x - world.x) ** 2 + (groupNode.y - world.y) ** 2);
       if (distance <= groupNode.radius + 5) {
@@ -560,6 +581,7 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
       }
     }
     
+    // Controlla click sui nodi persona
     for (const node of nodes) {
       const distance = Math.sqrt((node.x - world.x) ** 2 + (node.y - world.y) ** 2);
       if (distance <= node.radius + 5) {
@@ -572,6 +594,10 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
       }
     }
     
+    // Click su spazio vuoto - deseleziona
+    setSelectedNodes([]);
+    
+    // Pan
     setIsPanning(true);
     setPanStart({ 
       x: (e.touches ? e.touches[0].clientX : e.clientX) - panOffset.x, 
@@ -605,6 +631,17 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
       return;
     }
     
+    if (isDraggingSelection && selectedNodes.length > 0) {
+      const world = getWorldCoordinates(e);
+      
+      const dx = world.x - dragStartPos.x;
+      const dy = world.y - dragStartPos.y;
+      
+      handleMultiNodeDrag(dx, dy);
+      setDragStartPos({ x: world.x, y: world.y });
+      return;
+    }
+    
     if (draggedNode) {
       const world = getWorldCoordinates(e);
       const isGroupNode = draggedNode.indexOf('group_') === 0;
@@ -622,17 +659,20 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
   const handleMouseUp = () => {
     if (isSelecting && mode === 'select') {
       setIsSelecting(false);
+      
+      // Dopo la selezione, torna automaticamente in modalità grab
+      if (selectedNodes.length > 0) {
+        setMode('grab');
+      }
     }
     
     setDraggedNode(null);
     setIsPanning(false);
+    setIsDraggingSelection(false);
   };
 
   const handleClick = () => {
-    if (selectedNodes.length > 0 && !isDraggingSelection) {
-      setSelectedNodes([]);
-    }
-    setIsDraggingSelection(false);
+    // Non deselezionare subito, lascia che l'utente possa spostare
   };
 
   const handleTouchStart = (e) => {
@@ -684,7 +724,7 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     canvas: {
       width: '100%',
       height: 'auto',
-      cursor: mode === 'select' ? 'crosshair' : draggedNode ? 'grabbing' : isPanning ? 'grabbing' : 'grab',
+      cursor: mode === 'select' ? 'crosshair' : isDraggingSelection ? 'grabbing' : draggedNode ? 'grabbing' : isPanning ? 'grabbing' : 'grab',
       display: 'block',
       backgroundColor: '#0a0a0a',
       borderRadius: '4px',
