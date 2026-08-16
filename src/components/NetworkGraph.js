@@ -176,6 +176,7 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     
     drawGrid(ctx);
     
+    // Disegna connessioni tra persone (esistenti)
     connections.forEach((connection, index) => {
       const fromNode = nodes.find(n => n.id === connection.from);
       const toNode = nodes.find(n => n.id === connection.to);
@@ -186,20 +187,18 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     });
     
     const meNode = nodes.find(n => n.id === 'me');
-    if (meNode) {
-      nodes.filter(n => n.id !== 'me').forEach((node, index) => {
-        drawNeuralConnection(ctx, meNode, node, node.type, index + 1000);
-      });
-    }
     
+    // Disegna connessioni dai gruppi
     groupNodes.forEach((groupNode, groupIndex) => {
       const group = groupNode.groupData;
       
+      // UNICO collegamento da ME al gruppo
       if (meNode) {
         const connectionColor = group.includeMe ? '#00ff00' : '#666666';
         drawGroupConnection(ctx, meNode, groupNode, connectionColor, groupIndex + 2000);
       }
       
+      // Collegamenti dal gruppo ai membri con colore basato sulla MIA relazione con loro
       group.people.forEach((personId, memberIndex) => {
         const memberNode = nodes.find(n => n.id === personId);
         if (memberNode) {
@@ -207,12 +206,31 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
           drawGroupConnection(ctx, groupNode, memberNode, memberColor, groupIndex + 3000 + memberIndex);
         }
       });
+      
+      // Se includeMe, collega anche il gruppo a me
+      if (group.includeMe && meNode) {
+        drawGroupConnection(ctx, groupNode, meNode, '#00ff00', groupIndex + 4000);
+      }
     });
     
+    // Disegna connessioni da "me" direttamente alle persone (solo se non sono in un gruppo)
+    if (meNode) {
+      const peopleInGroups = new Set();
+      groups.forEach(group => {
+        group.people.forEach(personId => peopleInGroups.add(personId));
+      });
+      
+      nodes.filter(n => n.id !== 'me' && !peopleInGroups.has(n.id)).forEach((node, index) => {
+        drawNeuralConnection(ctx, meNode, node, node.type, index + 1000);
+      });
+    }
+    
+    // Disegna nodi gruppo
     groupNodes.forEach(groupNode => {
       drawGroupNode(ctx, groupNode);
     });
     
+    // Disegna nodi persona
     nodes.forEach(node => {
       drawNode(ctx, node);
     });
@@ -227,7 +245,7 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     ctx.moveTo(fromNode.x, fromNode.y);
     ctx.lineTo(toNode.x, toNode.y);
     ctx.strokeStyle = color;
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 2.5;
     ctx.shadowColor = color;
     ctx.shadowBlur = 8;
     ctx.stroke();
