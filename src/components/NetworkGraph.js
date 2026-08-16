@@ -160,6 +160,11 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     });
   };
 
+  // Funzione per capire se una persona è in un gruppo
+  const isPersonInGroup = (personId) => {
+    return groups.some(group => group.people.includes(personId));
+  };
+
   const drawGraph = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -176,23 +181,34 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
     
     drawGrid(ctx);
     
-    // Disegna connessioni tra persone (esistenti)
+    const meNode = nodes.find(n => n.id === 'me');
+    
+    // Disegna connessioni tra persone che NON sono in gruppi (connessioni dirette)
     connections.forEach((connection, index) => {
       const fromNode = nodes.find(n => n.id === connection.from);
       const toNode = nodes.find(n => n.id === connection.to);
       
       if (fromNode && toNode) {
+        // Salta se uno dei due è in un gruppo
+        if (isPersonInGroup(connection.from) || isPersonInGroup(connection.to)) {
+          return;
+        }
         drawNeuralConnection(ctx, fromNode, toNode, connection.type, index);
       }
     });
     
-    const meNode = nodes.find(n => n.id === 'me');
+    // Disegna connessioni da ME alle persone che NON sono in gruppi
+    if (meNode) {
+      nodes.filter(n => n.id !== 'me' && !isPersonInGroup(n.id)).forEach((node, index) => {
+        drawNeuralConnection(ctx, meNode, node, node.type, index + 1000);
+      });
+    }
     
     // Disegna connessioni dai gruppi
     groupNodes.forEach((groupNode, groupIndex) => {
       const group = groupNode.groupData;
       
-      // UNICO collegamento da ME al gruppo
+      // UNICO collegamento da ME al gruppo (verde se includeMe, grigio se no)
       if (meNode) {
         const connectionColor = group.includeMe ? '#00ff00' : '#666666';
         drawGroupConnection(ctx, meNode, groupNode, connectionColor, groupIndex + 2000);
@@ -206,24 +222,7 @@ function NetworkGraph({ people, connections, groups, onDeleteGroup, onUpdateGrou
           drawGroupConnection(ctx, groupNode, memberNode, memberColor, groupIndex + 3000 + memberIndex);
         }
       });
-      
-      // Se includeMe, collega anche il gruppo a me
-      if (group.includeMe && meNode) {
-        drawGroupConnection(ctx, groupNode, meNode, '#00ff00', groupIndex + 4000);
-      }
     });
-    
-    // Disegna connessioni da "me" direttamente alle persone (solo se non sono in un gruppo)
-    if (meNode) {
-      const peopleInGroups = new Set();
-      groups.forEach(group => {
-        group.people.forEach(personId => peopleInGroups.add(personId));
-      });
-      
-      nodes.filter(n => n.id !== 'me' && !peopleInGroups.has(n.id)).forEach((node, index) => {
-        drawNeuralConnection(ctx, meNode, node, node.type, index + 1000);
-      });
-    }
     
     // Disegna nodi gruppo
     groupNodes.forEach(groupNode => {
