@@ -13,7 +13,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { goalId, checked } = req.body;
+    const { goalId, checked, date } = req.body;
     
     if (!goalId) {
       return res.status(400).json({ error: 'Goal ID is required' });
@@ -26,8 +26,6 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'Configurazione Upstash mancante' });
     }
 
-    console.log('Toggle check giornaliero:', { goalId, checked });
-
     // Recupera l'obiettivo
     const getResponse = await fetch(url, {
       method: 'POST',
@@ -39,13 +37,7 @@ export default async function handler(req, res) {
     });
 
     if (!getResponse.ok) {
-      const errorText = await getResponse.text();
-      console.error('Upstash GET error:', getResponse.status, errorText);
-      return res.status(500).json({ 
-        error: 'Errore Upstash',
-        status: getResponse.status,
-        details: errorText
-      });
+      return res.status(500).json({ error: 'Errore Upstash' });
     }
 
     const getData = await getResponse.json();
@@ -56,39 +48,23 @@ export default async function handler(req, res) {
     }
 
     const goal = JSON.parse(goalData);
-    const today = new Date().toDateString();
     
-    // Assicurati che dailyHistory sia un array
+    // Usa la data fornita o quella di oggi
+    const targetDate = date || new Date().toDateString();
     let dailyHistory = Array.isArray(goal.dailyHistory) ? [...goal.dailyHistory] : [];
-    
-    console.log('Storico attuale:', dailyHistory);
-    console.log('Oggi:', today);
 
-    if (checked) {
-      // Aggiungi oggi allo storico se non è già presente
-      if (!dailyHistory.includes(today)) {
-        dailyHistory.push(today);
-        console.log('Aggiunto oggi allo storico');
-      }
-    } else {
-      // Rimuovi oggi dallo storico
-      dailyHistory = dailyHistory.filter(date => date !== today);
-      console.log('Rimosso oggi dallo storico');
+    if (checked && !dailyHistory.includes(targetDate)) {
+      dailyHistory.push(targetDate);
+    } else if (!checked) {
+      dailyHistory = dailyHistory.filter(d => d !== targetDate);
     }
 
-    // L'obiettivo NON è mai "completato" completamente finché non raggiunge la durata
     const updatedGoal = {
       ...goal,
-      checkedToday: checked,
-      dailyHistory: dailyHistory,
+      checkedToday: targetDate === new Date().toDateString() ? checked : goal.checkedToday,
+      dailyHistory,
       updatedAt: new Date().toISOString()
     };
-
-    console.log('Obiettivo aggiornato:', {
-      name: updatedGoal.name,
-      dailyHistoryLength: dailyHistory.length,
-      checkedToday: checked
-    });
 
     // Salva l'obiettivo aggiornato
     const updateResponse = await fetch(url, {
@@ -101,23 +77,13 @@ export default async function handler(req, res) {
     });
 
     if (!updateResponse.ok) {
-      const errorText = await updateResponse.text();
-      console.error('Upstash UPDATE error:', updateResponse.status, errorText);
-      return res.status(500).json({ 
-        error: 'Errore durante aggiornamento',
-        status: updateResponse.status,
-        details: errorText
-      });
+      return res.status(500).json({ error: 'Errore durante aggiornamento' });
     }
 
-    console.log('Check giornaliero salvato con successo');
     return res.status(200).json(updatedGoal);
 
   } catch (error) {
     console.error('API Error:', error);
-    return res.status(500).json({ 
-      error: error.message,
-      stack: error.stack
-    });
+    return res.status(500).json({ error: error.message });
   }
 }

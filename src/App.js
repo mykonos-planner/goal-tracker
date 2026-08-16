@@ -207,11 +207,48 @@ function App() {
     }
   };
 
+  const toggleDateCheck = async (goalId, date, checked) => {
+    try {
+      const dateString = date.toDateString();
+      
+      const response = await fetch('/api/daily-check', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          goalId, 
+          checked,
+          date: dateString
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update check');
+      }
+      
+      const updatedGoal = await response.json();
+      
+      setGoals(prevGoals => 
+        prevGoals.map(goal => {
+          const goalIdToCheck = goal.id || goal._id;
+          return goalIdToCheck === goalId ? updatedGoal : goal;
+        })
+      );
+      
+      await fetchGoals();
+      
+    } catch (err) {
+      console.error('Error updating date check:', err);
+      alert('Errore nell\'aggiornamento del check');
+    }
+  };
+
   const styles = {
     container: {
       maxWidth: '1200px',
       margin: '0 auto',
-      padding: isMobile ? '10px' : '20px',
+      padding: isMobile ? '5px' : '20px',
       fontFamily: "'Courier New', monospace",
       minHeight: '100vh',
       width: '100%',
@@ -478,7 +515,6 @@ function App() {
     return <NetworkView onBack={() => setCurrentSection('home')} />;
   }
 
-  // Sezione Objectives (senza header Organizer)
   return (
     <div style={styles.container}>
       <button 
@@ -540,8 +576,6 @@ function App() {
                   setViewMode('today');
                   setShowViewMenu(false);
                 }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(255, 153, 0, 0.1)'}
-                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
               >
                 [ TODAY VIEW ]
               </button>
@@ -551,8 +585,6 @@ function App() {
                   setViewMode('progress');
                   setShowViewMenu(false);
                 }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(255, 153, 0, 0.1)'}
-                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
               >
                 [ PROGRESS VIEW ]
               </button>
@@ -562,8 +594,6 @@ function App() {
                   setViewMode('calendar');
                   setShowViewMenu(false);
                 }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(255, 153, 0, 0.1)'}
-                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
               >
                 [ CALENDAR VIEW ]
               </button>
@@ -610,7 +640,10 @@ function App() {
           onDeleteGoal={deleteGoal}
         />
       ) : viewMode === 'calendar' ? (
-        <CalendarView goals={goals} />
+        <CalendarView 
+          goals={goals} 
+          onToggleDateCheck={toggleDateCheck}
+        />
       ) : (
         <TodayView 
           goals={goals} 

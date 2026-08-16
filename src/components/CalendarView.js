@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-function CalendarView({ goals }) {
+function CalendarView({ goals, onToggleDateCheck }) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
@@ -21,8 +21,6 @@ function CalendarView({ goals }) {
   };
 
   const getFirstDayOfMonth = (date) => {
-    // Modifica: 0 = Domenica, 1 = Lunedì, ..., 6 = Sabato
-    // Convertiamo per far iniziare da Lunedì
     const day = new Date(date.getFullYear(), date.getMonth(), 1).getDay();
     return day === 0 ? 6 : day - 1;
   };
@@ -245,18 +243,6 @@ function CalendarView({ goals }) {
       gap: '10px',
       minHeight: isMobile ? '40px' : 'auto',
     },
-    completedIcon: {
-      color: '#00ff00',
-      fontWeight: 'bold',
-      fontSize: isMobile ? '9px' : '10px',
-      flexShrink: 0,
-    },
-    pendingIcon: {
-      color: '#ff9900',
-      fontWeight: 'bold',
-      fontSize: isMobile ? '9px' : '10px',
-      flexShrink: 0,
-    },
     colorDot: {
       width: isMobile ? '10px' : '8px',
       height: isMobile ? '10px' : '8px',
@@ -264,6 +250,13 @@ function CalendarView({ goals }) {
       display: 'inline-block',
       marginRight: '5px',
       verticalAlign: 'middle',
+      flexShrink: 0,
+    },
+    checkbox: {
+      accentColor: '#00ff00',
+      cursor: 'pointer',
+      width: '18px',
+      height: '18px',
       flexShrink: 0,
     },
   };
@@ -392,9 +385,18 @@ function CalendarView({ goals }) {
                     }} />
                     {goal.name}
                   </span>
-                  <span style={completed ? styles.completedIcon : styles.pendingIcon}>
-                    {completed ? '[DONE]' : '[PEND]'}
-                  </span>
+                  <input
+                    type="checkbox"
+                    checked={completed}
+                    onChange={() => {
+                      onToggleDateCheck(goalId, selectedDate, !completed);
+                    }}
+                    style={{
+                      ...styles.checkbox,
+                      accentColor: goalColor,
+                    }}
+                    title={completed ? 'Segna come non completato' : 'Segna come completato'}
+                  />
                 </div>
               );
             })
