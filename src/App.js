@@ -4,6 +4,7 @@ import ProgressBars from './components/ProgressBars';
 import CalendarView from './components/CalendarView';
 import TodayView from './components/TodayView';
 import NetworkView from './components/NetworkView';
+import FantacalcioView from './components/FantacalcioView';
 
 function App() {
   const [goals, setGoals] = useState([]);
@@ -500,6 +501,24 @@ function App() {
               Manage your connections
             </div>
           </div>
+          
+          <div 
+            style={styles.menuCard}
+            onClick={() => setCurrentSection('fantacalcio')}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = 'rgba(255, 153, 0, 0.1)';
+              e.target.style.boxShadow = '0 0 20px rgba(255, 153, 0, 0.2)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = 'rgba(0, 255, 0, 0.02)';
+              e.target.style.boxShadow = 'none';
+            }}
+          >
+            <div style={styles.menuCardTitle}>[ FANTACALCIO ]</div>
+            <div style={styles.menuCardDescription}>
+              Gestisci la tua asta
+            </div>
+          </div>
         </div>
 
         <div style={styles.syncStatus}>
@@ -511,6 +530,10 @@ function App() {
 
   if (currentSection === 'network') {
     return <NetworkView onBack={() => setCurrentSection('home')} />;
+  }
+
+  if (currentSection === 'fantacalcio') {
+    return <FantacalcioView onBack={() => setCurrentSection('home')} />;
   }
 
   return (
