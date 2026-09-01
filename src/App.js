@@ -468,6 +468,24 @@ function App() {
         <div style={styles.mainMenu}>
           <div 
             style={styles.menuCard}
+            onClick={() => setCurrentSection('fantacalcio')}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = 'rgba(255, 153, 0, 0.1)';
+              e.target.style.boxShadow = '0 0 20px rgba(255, 153, 0, 0.2)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = 'rgba(0, 255, 0, 0.02)';
+              e.target.style.boxShadow = 'none';
+            }}
+          >
+            <div style={styles.menuCardTitle}>[ FANTACALCIO ]</div>
+            <div style={styles.menuCardDescription}>
+              Gestisci la tua asta
+            </div>
+          </div>
+          
+          <div 
+            style={styles.menuCard}
             onClick={() => setCurrentSection('goals')}
             onMouseEnter={(e) => {
               e.target.style.backgroundColor = 'rgba(0, 255, 0, 0.1)';
@@ -499,24 +517,6 @@ function App() {
             <div style={styles.menuCardTitle}>[ NETWORK LINK ]</div>
             <div style={styles.menuCardDescription}>
               Manage your connections
-            </div>
-          </div>
-          
-          <div 
-            style={styles.menuCard}
-            onClick={() => setCurrentSection('fantacalcio')}
-            onMouseEnter={(e) => {
-              e.target.style.backgroundColor = 'rgba(255, 153, 0, 0.1)';
-              e.target.style.boxShadow = '0 0 20px rgba(255, 153, 0, 0.2)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.backgroundColor = 'rgba(0, 255, 0, 0.02)';
-              e.target.style.boxShadow = 'none';
-            }}
-          >
-            <div style={styles.menuCardTitle}>[ FANTACALCIO ]</div>
-            <div style={styles.menuCardDescription}>
-              Gestisci la tua asta
             </div>
           </div>
         </div>
