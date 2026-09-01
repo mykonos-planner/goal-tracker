@@ -20,7 +20,37 @@ function FantacalcioView({ onBack }) {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const roles = ['all', 'Portiere', 'Difensore Centrale', 'Difensore Sinistro', 'Difensore Destro', 'Mediano', 'Centrocampista', 'Ala', 'Attaccante'];
+  const roleColors = {
+    'Por': '#ffff00', // Giallo
+    'Ds': '#00ff00', // Verde
+    'Dd': '#00ff00', // Verde
+    'Dc': '#00ff00', // Verde
+    'B': '#00ff00', // Verde
+    'E': '#00ff00', // Verde
+    'M': '#00ccff', // Blu
+    'C': '#00ccff', // Blu
+    'T': '#9b59b6', // Viola
+    'W': '#9b59b6', // Viola
+    'A': '#ff4444', // Rosso
+    'Pc': '#ff4444', // Rosso
+  };
+
+  const roleNames = {
+    'Por': 'Portiere',
+    'Ds': 'Difensore Sinistro',
+    'Dd': 'Difensore Destro',
+    'Dc': 'Difensore Centrale',
+    'B': 'Braccetto',
+    'E': 'Esterno',
+    'M': 'Mediano',
+    'C': 'Centrocampista',
+    'T': 'Trequartista',
+    'W': 'Ala',
+    'A': 'Attaccante',
+    'Pc': 'Prima Punta',
+  };
+
+  const allRoles = ['all', 'Por', 'Ds', 'Dd', 'Dc', 'B', 'E', 'M', 'C', 'T', 'W', 'A', 'Pc'];
   const teams = ['all', ...new Set(players.map(p => p.team))].sort();
   const categories = ['all', 'Top', 'Semi-Top', 'Terza Fascia', 'Quarta Fascia', 'Scommesse'];
 
@@ -39,7 +69,7 @@ function FantacalcioView({ onBack }) {
   const filteredPlayers = players.filter(player => {
     const matchesSearch = player.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                          player.team.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRole = selectedRole === 'all' || player.role === selectedRole;
+    const matchesRole = selectedRole === 'all' || (player.roles && player.roles.includes(selectedRole));
     const matchesTeam = selectedTeam === 'all' || player.team === selectedTeam;
     const matchesCategory = selectedCategory === 'all' || player.category === selectedCategory;
     return matchesSearch && matchesRole && matchesTeam && matchesCategory;
@@ -64,7 +94,7 @@ function FantacalcioView({ onBack }) {
   };
 
   const getRoleCount = (role) => {
-    return myTeam.filter(p => p.role === role).length;
+    return myTeam.filter(p => p.roles && p.roles.includes(role)).length;
   };
 
   const getTotalSpent = () => {
@@ -178,6 +208,7 @@ function FantacalcioView({ onBack }) {
       display: 'flex',
       alignItems: 'center',
       gap: '8px',
+      flexWrap: 'wrap',
     },
     playerInfo: {
       color: '#00cc00',
@@ -194,6 +225,15 @@ function FantacalcioView({ onBack }) {
       borderRadius: '50%',
       display: 'inline-block',
       flexShrink: 0,
+    },
+    roleBadge: {
+      display: 'inline-block',
+      padding: '2px 6px',
+      borderRadius: '8px',
+      fontSize: '9px',
+      fontWeight: 'bold',
+      letterSpacing: '0.5px',
+      marginRight: '3px',
     },
     teamCard: {
       backgroundColor: 'rgba(0, 255, 0, 0.02)',
@@ -216,6 +256,24 @@ function FantacalcioView({ onBack }) {
     },
   };
 
+  const renderRoleBadges = (player) => {
+    if (!player.roles || player.roles.length === 0) return null;
+    return player.roles.map(role => (
+      <span
+        key={role}
+        style={{
+          ...styles.roleBadge,
+          backgroundColor: `${roleColors[role]}22`,
+          color: roleColors[role],
+          border: `1px solid ${roleColors[role]}`,
+        }}
+        title={roleNames[role] || role}
+      >
+        {role}
+      </span>
+    ));
+  };
+
   const renderFilters = () => (
     <div>
       <input
@@ -231,9 +289,9 @@ function FantacalcioView({ onBack }) {
           onChange={(e) => setSelectedRole(e.target.value)}
           style={styles.select}
         >
-          {roles.map(role => (
+          {allRoles.map(role => (
             <option key={role} value={role}>
-              {role === 'all' ? 'Tutti i ruoli' : role}
+              {role === 'all' ? 'Tutti i ruoli' : `${role} - ${roleNames[role]}`}
             </option>
           ))}
         </select>
@@ -278,9 +336,10 @@ function FantacalcioView({ onBack }) {
                 {possibleStarter && <span style={{...styles.statusDot, backgroundColor: '#ff9900', boxShadow: '0 0 5px #ff9900'}} />}
                 {!starter && !possibleStarter && <span style={{...styles.statusDot, backgroundColor: '#666'}} />}
                 {player.name}
+                {renderRoleBadges(player)}
               </div>
               <div style={styles.playerInfo}>
-                {player.team} | {player.role} | {player.category}
+                {player.team} | {player.category}
               </div>
             </div>
             <div>
@@ -316,11 +375,12 @@ function FantacalcioView({ onBack }) {
                 {possibleStarter && <span style={{...styles.statusDot, backgroundColor: '#ff9900', boxShadow: '0 0 5px #ff9900'}} />}
                 {!starter && !possibleStarter && <span style={{...styles.statusDot, backgroundColor: '#666'}} />}
                 {player.name}
+                {renderRoleBadges(player)}
                 {isCalled && <span style={styles.calledBadge}> [CHIAMATO]</span>}
                 {isInTeam && <span style={{color: '#00ff00'}}> [IN SQUADRA]</span>}
               </div>
               <div style={styles.playerInfo}>
-                {player.team} | {player.role} | Prezzo: {player.price}
+                {player.team} | Prezzo: {player.price}
               </div>
             </div>
             <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
@@ -371,17 +431,17 @@ function FantacalcioView({ onBack }) {
         <div style={styles.statText}>Crediti spesi: {getTotalSpent()} crediti</div>
         <div style={styles.statText}>Crediti rimanenti: {getRemainingBudget()} crediti</div>
         <div style={styles.statText}>Giocatori totali: {myTeam.length}</div>
-        <div style={styles.statText}>Portieri: {getRoleCount('Portiere')} (min 2, max 3)</div>
-        <div style={styles.statText}>Non portieri: {myTeam.length - getRoleCount('Portiere')} (min 25, max 27)</div>
+        <div style={styles.statText}>Portieri: {getRoleCount('Por')} (min 2, max 3)</div>
+        <div style={styles.statText}>Non portieri: {myTeam.length - getRoleCount('Por')} (min 25, max 27)</div>
       </div>
       
       <h3 style={{color: '#00ccff', marginBottom: '10px'}}>[ GIOCATORI PER RUOLO ]</h3>
-      {roles.filter(r => r !== 'all').map(role => {
+      {allRoles.filter(r => r !== 'all').map(role => {
         const count = getRoleCount(role);
         if (count > 0) {
           return (
             <div key={role} style={styles.statText}>
-              {role}: {count}
+              {role} ({roleNames[role]}): {count}
             </div>
           );
         }
@@ -393,9 +453,12 @@ function FantacalcioView({ onBack }) {
         <div key={player.id} style={styles.teamCard}>
           <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
             <div>
-              <div style={styles.playerName}>{player.name}</div>
+              <div style={styles.playerName}>
+                {player.name}
+                {renderRoleBadges(player)}
+              </div>
               <div style={styles.playerInfo}>
-                {player.team} | {player.role} | Pagato: {player.paidPrice} cr
+                {player.team} | Pagato: {player.paidPrice} cr
               </div>
             </div>
             <button
