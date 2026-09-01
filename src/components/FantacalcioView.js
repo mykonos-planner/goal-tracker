@@ -1198,13 +1198,13 @@ function FantacalcioView({ onBack }) {
 
       <div style={styles.toolbar}>
         <button 
-          style={mainMode === 'visualizza' ? styles.buttonActive : styles.button}
+          style={styles.button}
           onClick={() => {
-            setMainMode('visualizza');
+            setMainMode(mainMode === 'visualizza' ? 'asta' : 'visualizza');
             setShowTeamView(false);
           }}
         >
-          [ MODALITA: VISUALIZZA ]
+          {mainMode === 'visualizza' ? '[ MODALITA: VISUALIZZA ]' : '[ MODALITA: ASTA ]'}
         </button>
         
         {mainMode === 'visualizza' && (
@@ -1232,16 +1232,6 @@ function FantacalcioView({ onBack }) {
             </button>
           </>
         )}
-        
-        <button 
-          style={mainMode === 'asta' ? styles.buttonActive : styles.button}
-          onClick={() => {
-            setMainMode('asta');
-            setShowTeamView(false);
-          }}
-        >
-          [ MODALITA: ASTA ]
-        </button>
       </div>
 
       {showAuctionModal && renderAuctionModal()}
