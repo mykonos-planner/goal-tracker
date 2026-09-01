@@ -3,7 +3,9 @@ import players from '../data/players';
 import lineups from '../data/lineups';
 
 function FantacalcioView({ onBack }) {
-  const [viewMode, setViewMode] = useState('list');
+  const [mainMode, setMainMode] = useState('visualizza'); // 'visualizza' o 'asta'
+  const [viewMode, setViewMode] = useState('list'); // Per modalità visualizza: 'list'
+  const [astaViewMode, setAstaViewMode] = useState('lista'); // Per modalità asta: 'lista' o 'squadra'
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRoles, setSelectedRoles] = useState([]);
   const [selectedTeam, setSelectedTeam] = useState('all');
@@ -50,7 +52,7 @@ function FantacalcioView({ onBack }) {
       const newAuction = {
         id: `asta_${Date.now()}`,
         name: newAuctionName.trim(),
-        budget: budget,
+        budget: 500,
         calledPlayers: [],
         myTeam: [],
         createdAt: new Date().toISOString(),
@@ -59,8 +61,10 @@ function FantacalcioView({ onBack }) {
       setCurrentAuction(newAuction);
       setCalledPlayers([]);
       setMyTeam([]);
+      setBudget(500);
       setNewAuctionName('');
       setShowAuctionModal(false);
+      setAstaViewMode('lista');
     }
   };
 
@@ -70,7 +74,7 @@ function FantacalcioView({ onBack }) {
     setMyTeam(auction.myTeam || []);
     setBudget(auction.budget || 500);
     setShowAuctionList(false);
-    setViewMode('asta');
+    setAstaViewMode('lista');
   };
 
   const saveAuction = () => {
@@ -97,6 +101,7 @@ function FantacalcioView({ onBack }) {
         setCurrentAuction(null);
         setCalledPlayers([]);
         setMyTeam([]);
+        setBudget(500);
       }
     }
   };
@@ -304,6 +309,17 @@ function FantacalcioView({ onBack }) {
       fontSize: isMobile ? '10px' : '11px',
       letterSpacing: '1px',
     },
+    mainToolbar: {
+      display: 'flex',
+      justifyContent: 'center',
+      gap: '10px',
+      marginBottom: '20px',
+      flexWrap: 'wrap',
+      padding: '15px',
+      backgroundColor: 'rgba(0, 255, 0, 0.02)',
+      borderRadius: '4px',
+      border: '1px solid rgba(0, 255, 0, 0.2)',
+    },
     toolbar: {
       display: 'flex',
       justifyContent: 'center',
@@ -327,6 +343,21 @@ function FantacalcioView({ onBack }) {
       fontFamily: "'Courier New', monospace",
       transition: 'all 0.3s',
       textTransform: 'uppercase',
+    },
+    buttonActive: {
+      padding: '10px 20px',
+      fontSize: '12px',
+      border: '1px solid #00ff00',
+      borderRadius: '4px',
+      cursor: 'pointer',
+      backgroundColor: 'rgba(0, 255, 0, 0.1)',
+      color: '#00ff00',
+      letterSpacing: '1px',
+      fontFamily: "'Courier New', monospace',
+      transition: 'all 0.3s',
+      textTransform: 'uppercase',
+      fontWeight: 'bold',
+      boxShadow: '0 0 10px rgba(0, 255, 0, 0.3)',
     },
     searchInput: {
       width: '100%',
@@ -839,16 +870,12 @@ function FantacalcioView({ onBack }) {
             <button
               onClick={confirmBuy}
               style={styles.buyButton}
-              onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(0, 204, 255, 0.1)'}
-              onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
             >
               [ CONFERMA ]
             </button>
             <button
               onClick={cancelBuy}
               style={styles.cancelBuyButton}
-              onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(255, 68, 68, 0.1)'}
-              onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
             >
               [ ANNULLA ]
             </button>
@@ -1108,11 +1135,11 @@ function FantacalcioView({ onBack }) {
     </>
   );
 
-  const renderListView = () => {
+  const renderVisualizzaMode = () => {
     const grouped = groupedPlayers();
     return (
       <div>
-        <h2 style={{color: '#00ff00', marginBottom: '15px'}}>[ LISTA GIOCATORI ]</h2>
+        <h2 style={{color: '#00ff00', marginBottom: '15px'}}>[ CONSULTA GIOCATORI ]</h2>
         {renderFilters()}
         {Object.keys(grouped).map(category => (
           <div key={category}>
@@ -1124,85 +1151,108 @@ function FantacalcioView({ onBack }) {
     );
   };
 
-  const renderAstaView = () => {
+  const renderAstaMode = () => {
+    if (!currentAuction) {
+      return (
+        <div style={{textAlign: 'center', padding: '40px'}}>
+          <p style={{color: '#ff9900', fontSize: '16px', marginBottom: '20px'}}>
+            [ NESSUNA ASTA ATTIVA ]
+          </p>
+          <p style={{color: '#666', fontSize: '12px', marginBottom: '20px'}}>
+            Crea una nuova asta o carica un'asta esistente
+          </p>
+          <button
+            style={{...styles.button, borderColor: '#ff9900', color: '#ff9900'}}
+            onClick={() => setShowAuctionList(true)}
+          >
+            [ LE MIE ASTE ]
+          </button>
+        </div>
+      );
+    }
+
     const grouped = groupedPlayers();
     return (
       <div>
-        <h2 style={{color: '#00ff00', marginBottom: '15px'}}>[ MODALITÀ ASTA ]</h2>
-        {currentAuction && (
-          <div style={{...styles.statsPanel, marginBottom: '15px'}}>
-            <div style={styles.statText}>Asta: {currentAuction.name}</div>
-            <div style={styles.statText}>Crediti rimanenti: {getRemainingBudget()} crediti</div>
-            <div style={styles.statText}>Giocatori in squadra: {myTeam.length}</div>
+        <div style={styles.toolbar}>
+          <button 
+            style={astaViewMode === 'lista' ? styles.buttonActive : styles.button}
+            onClick={() => setAstaViewMode('lista')}
+          >
+            [ LISTA GIOCATORI ]
+          </button>
+          <button 
+            style={astaViewMode === 'squadra' ? styles.buttonActive : styles.button}
+            onClick={() => setAstaViewMode('squadra')}
+          >
+            [ LA MIA SQUADRA ]
+          </button>
+        </div>
+        
+        <div style={{...styles.statsPanel, marginBottom: '15px'}}>
+          <div style={styles.statText}>Asta: {currentAuction.name}</div>
+          <div style={styles.statText}>Crediti rimanenti: {getRemainingBudget()} crediti</div>
+          <div style={styles.statText}>Giocatori in squadra: {myTeam.length}</div>
+        </div>
+        
+        {astaViewMode === 'lista' ? (
+          <>
+            {renderFilters()}
+            {Object.keys(grouped).map(category => (
+              <div key={category}>
+                <h3 style={styles.categoryHeader}>{category}</h3>
+                {grouped[category].map(player => renderPlayerCard(player, true))}
+              </div>
+            ))}
+          </>
+        ) : (
+          <div>
+            <h3 style={{color: '#00ccff', marginBottom: '10px'}}>[ GIOCATORI PER RUOLO ]</h3>
+            {allRoles.map(role => {
+              const count = getRoleCount(role);
+              if (count > 0) {
+                return (
+                  <div key={role} style={styles.statText}>
+                    {role} ({roleNames[role]}): {count}
+                  </div>
+                );
+              }
+              return null;
+            })}
+            
+            <h3 style={{color: '#00ccff', marginBottom: '10px', marginTop: '20px'}}>[ ROSA ]</h3>
+            {myTeam.map(player => (
+              <div key={player.id} style={styles.teamCard}>
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                  <div>
+                    <div style={styles.playerName}>
+                      {player.name}
+                      {renderRoleBadges(player)}
+                    </div>
+                    <div style={styles.playerInfo}>
+                      {player.team} | Pagato: {player.paidPrice} crediti
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => removeFromTeam(player.id)}
+                    style={{
+                      ...styles.button,
+                      padding: '5px 10px',
+                      fontSize: '10px',
+                      borderColor: '#ff4444',
+                      color: '#ff4444',
+                    }}
+                  >
+                    X
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         )}
-        {renderFilters()}
-        {Object.keys(grouped).map(category => (
-          <div key={category}>
-            <h3 style={styles.categoryHeader}>{category}</h3>
-            {grouped[category].map(player => renderPlayerCard(player, true))}
-          </div>
-        ))}
       </div>
     );
   };
-
-  const renderSquadraView = () => (
-    <div>
-      <h2 style={{color: '#00ff00', marginBottom: '15px'}}>[ LA MIA SQUADRA ]</h2>
-      
-      <div style={styles.statsPanel}>
-        <div style={styles.statText}>Budget iniziale: {budget} crediti</div>
-        <div style={styles.statText}>Crediti spesi: {getTotalSpent()} crediti</div>
-        <div style={styles.statText}>Crediti rimanenti: {getRemainingBudget()} crediti</div>
-        <div style={styles.statText}>Giocatori totali: {myTeam.length}</div>
-        <div style={styles.statText}>Portieri: {getRoleCount('Por')} (min 2, max 3)</div>
-        <div style={styles.statText}>Non portieri: {myTeam.length - getRoleCount('Por')} (min 25, max 27)</div>
-      </div>
-      
-      <h3 style={{color: '#00ccff', marginBottom: '10px'}}>[ GIOCATORI PER RUOLO ]</h3>
-      {allRoles.map(role => {
-        const count = getRoleCount(role);
-        if (count > 0) {
-          return (
-            <div key={role} style={styles.statText}>
-              {role} ({roleNames[role]}): {count}
-            </div>
-          );
-        }
-        return null;
-      })}
-      
-      <h3 style={{color: '#00ccff', marginBottom: '10px', marginTop: '20px'}}>[ ROSA ]</h3>
-      {myTeam.map(player => (
-        <div key={player.id} style={styles.teamCard}>
-          <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-            <div>
-              <div style={styles.playerName}>
-                {player.name}
-                {renderRoleBadges(player)}
-              </div>
-              <div style={styles.playerInfo}>
-                {player.team} | Pagato: {player.paidPrice} crediti
-              </div>
-            </div>
-            <button
-              onClick={() => removeFromTeam(player.id)}
-              style={{
-                ...styles.button,
-                padding: '5px 10px',
-                fontSize: '10px',
-                borderColor: '#ff4444',
-                color: '#ff4444',
-              }}
-            >
-              X
-            </button>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
 
   return (
     <div style={styles.container}>
@@ -1212,43 +1262,45 @@ function FantacalcioView({ onBack }) {
       
       <h1 style={styles.header}>[ FANTACALCIO ]</h1>
 
-      <div style={styles.toolbar}>
+      <div style={styles.mainToolbar}>
         <button 
-          style={{...styles.button, borderColor: '#ff9900', color: '#ff9900'}}
-          onClick={() => setShowAuctionList(true)}
+          style={mainMode === 'visualizza' ? styles.buttonActive : styles.button}
+          onClick={() => setMainMode('visualizza')}
         >
-          [ LE MIE ASTE ]
+          [ VISUALIZZA ]
         </button>
-        <button style={styles.button} onClick={() => setViewMode('list')}>
-          [ LISTA ]
+        <button 
+          style={mainMode === 'asta' ? styles.buttonActive : styles.button}
+          onClick={() => setMainMode('asta')}
+        >
+          [ MODALITÀ ASTA ]
         </button>
-        <button style={styles.button} onClick={() => setViewMode('asta')}>
-          [ ASTA ]
-        </button>
-        <button style={styles.button} onClick={() => setViewMode('squadra')}>
-          [ SQUADRA ]
-        </button>
-        {currentAuction && (
-          <>
-            <button
-              style={{...styles.button, borderColor: '#00ccff', color: '#00ccff'}}
-              onClick={saveAuction}
-            >
-              [ SALVA ASTA ]
-            </button>
-            <span style={{color: '#ff9900', fontSize: '10px'}}>
-              Asta: {currentAuction.name}
-            </span>
-          </>
-        )}
       </div>
+
+      {mainMode === 'asta' && currentAuction && (
+        <div style={styles.toolbar}>
+          <button 
+            style={{...styles.button, borderColor: '#ff9900', color: '#ff9900'}}
+            onClick={() => setShowAuctionList(true)}
+          >
+            [ CAMBIA ASTA ]
+          </button>
+          <button
+            style={{...styles.button, borderColor: '#00ccff', color: '#00ccff'}}
+            onClick={saveAuction}
+          >
+            [ SALVA ASTA ]
+          </button>
+          <span style={{color: '#ff9900', fontSize: '10px'}}>
+            Asta: {currentAuction.name}
+          </span>
+        </div>
+      )}
 
       {showAuctionModal && renderAuctionModal()}
       {showAuctionList && renderAuctionList()}
 
-      {viewMode === 'list' && renderListView()}
-      {viewMode === 'asta' && renderAstaView()}
-      {viewMode === 'squadra' && renderSquadraView()}
+      {mainMode === 'visualizza' ? renderVisualizzaMode() : renderAstaMode()}
     </div>
   );
 }
