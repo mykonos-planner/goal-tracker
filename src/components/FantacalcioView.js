@@ -4,8 +4,6 @@ import lineups from '../data/lineups';
 
 function FantacalcioView({ onBack }) {
   const [mainMode, setMainMode] = useState('visualizza'); // 'visualizza' o 'asta'
-  const [viewMode, setViewMode] = useState('list'); // Per modalità visualizza: 'list'
-  const [astaViewMode, setAstaViewMode] = useState('lista'); // Per modalità asta: 'lista' o 'squadra'
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRoles, setSelectedRoles] = useState([]);
   const [selectedTeam, setSelectedTeam] = useState('all');
@@ -29,6 +27,7 @@ function FantacalcioView({ onBack }) {
   const [showAuctionModal, setShowAuctionModal] = useState(false);
   const [newAuctionName, setNewAuctionName] = useState('');
   const [showAuctionList, setShowAuctionList] = useState(false);
+  const [showTeamView, setShowTeamView] = useState(false);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -64,7 +63,7 @@ function FantacalcioView({ onBack }) {
       setBudget(500);
       setNewAuctionName('');
       setShowAuctionModal(false);
-      setAstaViewMode('lista');
+      setShowTeamView(false);
     }
   };
 
@@ -74,7 +73,7 @@ function FantacalcioView({ onBack }) {
     setMyTeam(auction.myTeam || []);
     setBudget(auction.budget || 500);
     setShowAuctionList(false);
-    setAstaViewMode('lista');
+    setShowTeamView(false);
   };
 
   const saveAuction = () => {
@@ -89,8 +88,6 @@ function FantacalcioView({ onBack }) {
       setAuctions(auctions.map(a => a.id === currentAuction.id ? updatedAuction : a));
       setCurrentAuction(updatedAuction);
       alert('Asta salvata con successo!');
-    } else {
-      alert('Nessuna asta attiva. Crea o carica un\'asta prima.');
     }
   };
 
@@ -308,17 +305,6 @@ function FantacalcioView({ onBack }) {
       fontFamily: "'Courier New', monospace",
       fontSize: isMobile ? '10px' : '11px',
       letterSpacing: '1px',
-    },
-    mainToolbar: {
-      display: 'flex',
-      justifyContent: 'center',
-      gap: '10px',
-      marginBottom: '20px',
-      flexWrap: 'wrap',
-      padding: '15px',
-      backgroundColor: 'rgba(0, 255, 0, 0.02)',
-      borderRadius: '4px',
-      border: '1px solid rgba(0, 255, 0, 0.2)',
     },
     toolbar: {
       display: 'flex',
@@ -1078,7 +1064,7 @@ function FantacalcioView({ onBack }) {
     <>
       <div style={styles.overlay} onClick={() => setShowAuctionList(false)} />
       <div style={styles.auctionList}>
-        <h2 style={styles.auctionModalTitle}>[ LE TUE ASTE ]</h2>
+        <h2 style={styles.auctionModalTitle}>[ SELEZIONA ASTA ]</h2>
         {auctions.length === 0 ? (
           <p style={{color: '#666', textAlign: 'center'}}>Nessuna asta creata</p>
         ) : (
@@ -1114,10 +1100,19 @@ function FantacalcioView({ onBack }) {
             </div>
           ))
         )}
+        {currentAuction && (
+          <div style={{marginTop: '15px', padding: '10px', borderTop: '1px solid #ff9900'}}>
+            <button
+              onClick={saveAuction}
+              style={{...styles.button, borderColor: '#00ccff', color: '#00ccff', width: '100%'}}
+            >
+              [ SALVA ASTA ATTIVA ]
+            </button>
+          </div>
+        )}
         <div style={{display: 'flex', gap: '10px', justifyContent: 'center', marginTop: '15px'}}>
           <button
             onClick={() => {
-              setShowAuctionList(false);
               setShowAuctionModal(true);
             }}
             style={{...styles.button, borderColor: '#ff9900', color: '#ff9900'}}
@@ -1135,124 +1130,63 @@ function FantacalcioView({ onBack }) {
     </>
   );
 
-  const renderVisualizzaMode = () => {
-    const grouped = groupedPlayers();
-    return (
-      <div>
-        <h2 style={{color: '#00ff00', marginBottom: '15px'}}>[ CONSULTA GIOCATORI ]</h2>
-        {renderFilters()}
-        {Object.keys(grouped).map(category => (
-          <div key={category}>
-            <h3 style={styles.categoryHeader}>{category}</h3>
-            {grouped[category].map(player => renderPlayerCard(player, false))}
-          </div>
-        ))}
+  const renderTeamView = () => (
+    <div>
+      <h2 style={{color: '#00ff00', marginBottom: '15px'}}>[ LA MIA SQUADRA ]</h2>
+      
+      <div style={styles.statsPanel}>
+        <div style={styles.statText}>Asta: {currentAuction ? currentAuction.name : 'Nessuna'}</div>
+        <div style={styles.statText}>Budget iniziale: {budget} crediti</div>
+        <div style={styles.statText}>Crediti spesi: {getTotalSpent()} crediti</div>
+        <div style={styles.statText}>Crediti rimanenti: {getRemainingBudget()} crediti</div>
+        <div style={styles.statText}>Giocatori totali: {myTeam.length}</div>
+        <div style={styles.statText}>Portieri: {getRoleCount('Por')} (min 2, max 3)</div>
+        <div style={styles.statText}>Non portieri: {myTeam.length - getRoleCount('Por')} (min 25, max 27)</div>
       </div>
-    );
-  };
-
-  const renderAstaMode = () => {
-    if (!currentAuction) {
-      return (
-        <div style={{textAlign: 'center', padding: '40px'}}>
-          <p style={{color: '#ff9900', fontSize: '16px', marginBottom: '20px'}}>
-            [ NESSUNA ASTA ATTIVA ]
-          </p>
-          <p style={{color: '#666', fontSize: '12px', marginBottom: '20px'}}>
-            Crea una nuova asta o carica un'asta esistente
-          </p>
-          <button
-            style={{...styles.button, borderColor: '#ff9900', color: '#ff9900'}}
-            onClick={() => setShowAuctionList(true)}
-          >
-            [ LE MIE ASTE ]
-          </button>
-        </div>
-      );
-    }
-
-    const grouped = groupedPlayers();
-    return (
-      <div>
-        <div style={styles.toolbar}>
-          <button 
-            style={astaViewMode === 'lista' ? styles.buttonActive : styles.button}
-            onClick={() => setAstaViewMode('lista')}
-          >
-            [ LISTA GIOCATORI ]
-          </button>
-          <button 
-            style={astaViewMode === 'squadra' ? styles.buttonActive : styles.button}
-            onClick={() => setAstaViewMode('squadra')}
-          >
-            [ LA MIA SQUADRA ]
-          </button>
-        </div>
-        
-        <div style={{...styles.statsPanel, marginBottom: '15px'}}>
-          <div style={styles.statText}>Asta: {currentAuction.name}</div>
-          <div style={styles.statText}>Crediti rimanenti: {getRemainingBudget()} crediti</div>
-          <div style={styles.statText}>Giocatori in squadra: {myTeam.length}</div>
-        </div>
-        
-        {astaViewMode === 'lista' ? (
-          <>
-            {renderFilters()}
-            {Object.keys(grouped).map(category => (
-              <div key={category}>
-                <h3 style={styles.categoryHeader}>{category}</h3>
-                {grouped[category].map(player => renderPlayerCard(player, true))}
+      
+      <h3 style={{color: '#00ccff', marginBottom: '10px'}}>[ GIOCATORI PER RUOLO ]</h3>
+      {allRoles.map(role => {
+        const count = getRoleCount(role);
+        if (count > 0) {
+          return (
+            <div key={role} style={styles.statText}>
+              {role} ({roleNames[role]}): {count}
+            </div>
+          );
+        }
+        return null;
+      })}
+      
+      <h3 style={{color: '#00ccff', marginBottom: '10px', marginTop: '20px'}}>[ ROSA ]</h3>
+      {myTeam.map(player => (
+        <div key={player.id} style={styles.teamCard}>
+          <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+            <div>
+              <div style={styles.playerName}>
+                {player.name}
+                {renderRoleBadges(player)}
               </div>
-            ))}
-          </>
-        ) : (
-          <div>
-            <h3 style={{color: '#00ccff', marginBottom: '10px'}}>[ GIOCATORI PER RUOLO ]</h3>
-            {allRoles.map(role => {
-              const count = getRoleCount(role);
-              if (count > 0) {
-                return (
-                  <div key={role} style={styles.statText}>
-                    {role} ({roleNames[role]}): {count}
-                  </div>
-                );
-              }
-              return null;
-            })}
-            
-            <h3 style={{color: '#00ccff', marginBottom: '10px', marginTop: '20px'}}>[ ROSA ]</h3>
-            {myTeam.map(player => (
-              <div key={player.id} style={styles.teamCard}>
-                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-                  <div>
-                    <div style={styles.playerName}>
-                      {player.name}
-                      {renderRoleBadges(player)}
-                    </div>
-                    <div style={styles.playerInfo}>
-                      {player.team} | Pagato: {player.paidPrice} crediti
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => removeFromTeam(player.id)}
-                    style={{
-                      ...styles.button,
-                      padding: '5px 10px',
-                      fontSize: '10px',
-                      borderColor: '#ff4444',
-                      color: '#ff4444',
-                    }}
-                  >
-                    X
-                  </button>
-                </div>
+              <div style={styles.playerInfo}>
+                {player.team} | Pagato: {player.paidPrice} crediti
               </div>
-            ))}
+            </div>
+            <button
+              onClick={() => removeFromTeam(player.id)}
+              style={{
+                ...styles.button,
+                padding: '5px 10px',
+                fontSize: '10px',
+                borderColor: '#ff4444',
+                color: '#ff4444',
+              }}
+            >
+              X
+            </button>
           </div>
-        )}
-      </div>
-    );
-  };
+        </div>
+      ))}
+    </div>
+  );
 
   return (
     <div style={styles.container}>
@@ -1262,45 +1196,111 @@ function FantacalcioView({ onBack }) {
       
       <h1 style={styles.header}>[ FANTACALCIO ]</h1>
 
-      <div style={styles.mainToolbar}>
+      <div style={styles.toolbar}>
         <button 
           style={mainMode === 'visualizza' ? styles.buttonActive : styles.button}
-          onClick={() => setMainMode('visualizza')}
+          onClick={() => {
+            setMainMode('visualizza');
+            setShowTeamView(false);
+          }}
         >
-          [ VISUALIZZA ]
+          [ MODALITÀ: VISUALIZZA ]
         </button>
+        
+        {mainMode === 'visualizza' && (
+          <button 
+            style={styles.buttonActive}
+          >
+            [ LISTA ]
+          </button>
+        )}
+        
+        {mainMode === 'asta' && (
+          <>
+            <button 
+              style={{...styles.button, borderColor: '#ff9900', color: '#ff9900'}}
+              onClick={() => {
+                setShowAuctionList(true);
+                setShowTeamView(false);
+              }}
+            >
+              [ SELEZIONA ASTA ]
+            </button>
+            <button 
+              style={showTeamView ? styles.buttonActive : styles.button}
+              onClick={() => setShowTeamView(!showTeamView)}
+            >
+              [ SQUADRA ]
+            </button>
+          </>
+        )}
+        
         <button 
           style={mainMode === 'asta' ? styles.buttonActive : styles.button}
-          onClick={() => setMainMode('asta')}
+          onClick={() => {
+            setMainMode('asta');
+            setShowTeamView(false);
+          }}
         >
-          [ MODALITÀ ASTA ]
+          [ MODALITÀ: ASTA ]
         </button>
       </div>
-
-      {mainMode === 'asta' && currentAuction && (
-        <div style={styles.toolbar}>
-          <button 
-            style={{...styles.button, borderColor: '#ff9900', color: '#ff9900'}}
-            onClick={() => setShowAuctionList(true)}
-          >
-            [ CAMBIA ASTA ]
-          </button>
-          <button
-            style={{...styles.button, borderColor: '#00ccff', color: '#00ccff'}}
-            onClick={saveAuction}
-          >
-            [ SALVA ASTA ]
-          </button>
-          <span style={{color: '#ff9900', fontSize: '10px'}}>
-            Asta: {currentAuction.name}
-          </span>
-        </div>
-      )}
 
       {showAuctionModal && renderAuctionModal()}
       {showAuctionList && renderAuctionList()}
 
-      {mainMode === 'visualizza' ? renderVisualizzaMode() : renderAstaMode()}
+      {mainMode === 'visualizza' ? (
+        <div>
+          <h2 style={{color: '#00ff00', marginBottom: '15px'}}>[ CONSULTA GIOCATORI ]</h2>
+          {renderFilters()}
+          {Object.keys(groupedPlayers()).map(category => (
+            <div key={category}>
+              <h3 style={styles.categoryHeader}>{category}</h3>
+              {groupedPlayers()[category].map(player => renderPlayerCard(player, false))}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div>
+          {currentAuction ? (
+            <>
+              {showTeamView ? (
+                renderTeamView()
+              ) : (
+                <>
+                  <div style={{...styles.statsPanel, marginBottom: '15px'}}>
+                    <div style={styles.statText}>Asta: {currentAuction.name}</div>
+                    <div style={styles.statText}>Crediti rimanenti: {getRemainingBudget()} crediti</div>
+                    <div style={styles.statText}>Giocatori in squadra: {myTeam.length}</div>
+                  </div>
+                  {renderFilters()}
+                  {Object.keys(groupedPlayers()).map(category => (
+                    <div key={category}>
+                      <h3 style={styles.categoryHeader}>{category}</h3>
+                      {groupedPlayers()[category].map(player => renderPlayerCard(player, true))}
+                    </div>
+                  ))}
+                </>
+              )}
+            </>
+          ) : (
+            <div style={{textAlign: 'center', padding: '40px'}}>
+              <p style={{color: '#ff9900', fontSize: '16px', marginBottom: '20px'}}>
+                [ NESSUNA ASTA ATTIVA ]
+              </p>
+              <p style={{color: '#666', fontSize: '12px', marginBottom: '20px'}}>
+                Crea una nuova asta o seleziona un'asta esistente
+              </p>
+              <button
+                style={{...styles.button, borderColor: '#ff9900', color: '#ff9900'}}
+                onClick={() => setShowAuctionList(true)}
+              >
+                [ SELEZIONA ASTA ]
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
