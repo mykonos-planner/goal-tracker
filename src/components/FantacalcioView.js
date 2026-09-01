@@ -5,7 +5,7 @@ import lineups from '../data/lineups';
 function FantacalcioView({ onBack }) {
   const [viewMode, setViewMode] = useState('list');
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedRole, setSelectedRole] = useState('all');
+  const [selectedRoles, setSelectedRoles] = useState([]); // Ora è un array
   const [selectedTeam, setSelectedTeam] = useState('all');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [minPrice, setMinPrice] = useState('');
@@ -19,6 +19,7 @@ function FantacalcioView({ onBack }) {
   const [isMobile, setIsMobile] = useState(false);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [expandedBallottaggio, setExpandedBallottaggio] = useState(null);
+  const [showRoleSelector, setShowRoleSelector] = useState(false);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -59,9 +60,21 @@ function FantacalcioView({ onBack }) {
 
   const categoryOrder = ['Top', 'Semi-Top', 'Terza Fascia', 'Quarta Fascia', 'Scommesse'];
 
-  const allRoles = ['all', 'Por', 'Ds', 'Dd', 'Dc', 'B', 'E', 'M', 'C', 'T', 'W', 'A', 'Pc'];
+  const allRoles = ['Por', 'Ds', 'Dd', 'Dc', 'B', 'E', 'M', 'C', 'T', 'W', 'A', 'Pc'];
   const teams = ['all', ...new Set(players.map(p => p.team))].sort();
   const categories = ['all', ...categoryOrder];
+
+  const toggleRole = (role) => {
+    setSelectedRoles(prev => 
+      prev.includes(role) 
+        ? prev.filter(r => r !== role)
+        : [...prev, role]
+    );
+  };
+
+  const clearRoles = () => {
+    setSelectedRoles([]);
+  };
 
   const getBallottaggio = (player) => {
     const teamLineup = lineups[player.team];
@@ -69,11 +82,7 @@ function FantacalcioView({ onBack }) {
       return null;
     }
     
-    // Cerca il compagno di ballottaggio
     const allPossible = teamLineup.possible;
-    const playerIndex = allPossible.indexOf(player.id);
-    
-    // Cerca giocatori dello stesso ruolo nella lista possible
     const playerData = players.find(p => p.id === player.id);
     if (!playerData) return null;
     
@@ -115,7 +124,11 @@ function FantacalcioView({ onBack }) {
   const filteredPlayers = players.filter(player => {
     const matchesSearch = player.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                          player.team.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRole = selectedRole === 'all' || (player.roles && player.roles.includes(selectedRole));
+    
+    // Se non ci sono ruoli selezionati, mostra tutti
+    const matchesRole = selectedRoles.length === 0 || 
+      selectedRoles.every(role => player.roles && player.roles.includes(role));
+    
     const matchesTeam = selectedTeam === 'all' || player.team === selectedTeam;
     const matchesCategory = selectedCategory === 'all' || player.category === selectedCategory;
     
@@ -253,6 +266,81 @@ function FantacalcioView({ onBack }) {
       gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr',
       gap: '10px',
       marginBottom: '10px',
+    },
+    roleSelectorContainer: {
+      marginBottom: '10px',
+    },
+    roleSelectorButton: {
+      width: '100%',
+      padding: '10px',
+      backgroundColor: 'transparent',
+      color: '#00ff00',
+      border: '1px solid #00ff00',
+      borderRadius: '4px',
+      fontSize: '12px',
+      cursor: 'pointer',
+      fontFamily: "'Courier New', monospace",
+      letterSpacing: '1px',
+      textTransform: 'uppercase',
+      textAlign: 'left',
+    },
+    roleSelectorDropdown: {
+      backgroundColor: '#0a0a0a',
+      border: '1px solid #00ff00',
+      borderRadius: '4px',
+      padding: '10px',
+      marginTop: '5px',
+      display: 'flex',
+      flexWrap: 'wrap',
+      gap: '8px',
+    },
+    roleCheckbox: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '5px',
+      cursor: 'pointer',
+      padding: '5px 10px',
+      border: '1px solid rgba(0, 255, 0, 0.3)',
+      borderRadius: '4px',
+      transition: 'all 0.3s',
+    },
+    roleCheckboxSelected: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '5px',
+      cursor: 'pointer',
+      padding: '5px 10px',
+      border: '1px solid #00ff00',
+      borderRadius: '4px',
+      backgroundColor: 'rgba(0, 255, 0, 0.1)',
+      transition: 'all 0.3s',
+    },
+    checkbox: {
+      accentColor: '#00ff00',
+      cursor: 'pointer',
+    },
+    roleLabel: {
+      color: '#00ff00',
+      fontSize: '11px',
+      letterSpacing: '0.5px',
+    },
+    clearRolesButton: {
+      padding: '5px 10px',
+      backgroundColor: 'transparent',
+      color: '#ff4444',
+      border: '1px solid #ff4444',
+      borderRadius: '4px',
+      fontSize: '10px',
+      cursor: 'pointer',
+      fontFamily: "'Courier New', monospace",
+      letterSpacing: '1px',
+      marginLeft: 'auto',
+    },
+    selectedRolesInfo: {
+      color: '#ff9900',
+      fontSize: '11px',
+      letterSpacing: '0.5px',
+      marginTop: '5px',
     },
     advancedFiltersRow: {
       display: 'grid',
@@ -524,6 +612,60 @@ function FantacalcioView({ onBack }) {
     );
   };
 
+  const renderRoleSelector = () => (
+    <div style={styles.roleSelectorContainer}>
+      <button 
+        style={styles.roleSelectorButton}
+        onClick={() => setShowRoleSelector(!showRoleSelector)}
+      >
+        [ SELEZIONA RUOLI {selectedRoles.length > 0 ? `(${selectedRoles.length})` : ''} ▼ ]
+      </button>
+      
+      {showRoleSelector && (
+        <div style={styles.roleSelectorDropdown}>
+          {allRoles.map(role => (
+            <div
+              key={role}
+              style={selectedRoles.includes(role) ? styles.roleCheckboxSelected : styles.roleCheckbox}
+              onClick={() => toggleRole(role)}
+            >
+              <input
+                type="checkbox"
+                checked={selectedRoles.includes(role)}
+                onChange={() => toggleRole(role)}
+                style={styles.checkbox}
+                onClick={(e) => e.stopPropagation()}
+              />
+              <span style={{
+                ...styles.roleLabel,
+                color: roleColors[role],
+              }}>
+                {role} - {roleNames[role]}
+              </span>
+            </div>
+          ))}
+          {selectedRoles.length > 0 && (
+            <button
+              style={styles.clearRolesButton}
+              onClick={(e) => {
+                e.stopPropagation();
+                clearRoles();
+              }}
+            >
+              [ CLEAR ]
+            </button>
+          )}
+        </div>
+      )}
+      
+      {selectedRoles.length > 0 && (
+        <div style={styles.selectedRolesInfo}>
+          Filtro: {selectedRoles.join(' + ')} (deve avere TUTTI questi ruoli)
+        </div>
+      )}
+    </div>
+  );
+
   const renderFilters = () => (
     <div>
       <input
@@ -534,17 +676,7 @@ function FantacalcioView({ onBack }) {
         style={styles.searchInput}
       />
       <div style={styles.filterRow}>
-        <select
-          value={selectedRole}
-          onChange={(e) => setSelectedRole(e.target.value)}
-          style={styles.select}
-        >
-          {allRoles.map(role => (
-            <option key={role} value={role}>
-              {role === 'all' ? 'Tutti i ruoli' : `${role} - ${roleNames[role]}`}
-            </option>
-          ))}
-        </select>
+        {renderRoleSelector()}
         <select
           value={selectedTeam}
           onChange={(e) => setSelectedTeam(e.target.value)}
@@ -691,7 +823,7 @@ function FantacalcioView({ onBack }) {
       </div>
       
       <h3 style={{color: '#00ccff', marginBottom: '10px'}}>[ GIOCATORI PER RUOLO ]</h3>
-      {allRoles.filter(r => r !== 'all').map(role => {
+      {allRoles.map(role => {
         const count = getRoleCount(role);
         if (count > 0) {
           return (
