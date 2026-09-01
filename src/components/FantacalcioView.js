@@ -18,6 +18,7 @@ function FantacalcioView({ onBack }) {
   const [budget, setBudget] = useState(500);
   const [isMobile, setIsMobile] = useState(false);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [expandedBallottaggio, setExpandedBallottaggio] = useState(null);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -61,6 +62,36 @@ function FantacalcioView({ onBack }) {
   const allRoles = ['all', 'Por', 'Ds', 'Dd', 'Dc', 'B', 'E', 'M', 'C', 'T', 'W', 'A', 'Pc'];
   const teams = ['all', ...new Set(players.map(p => p.team))].sort();
   const categories = ['all', ...categoryOrder];
+
+  const getBallottaggio = (player) => {
+    const teamLineup = lineups[player.team];
+    if (!teamLineup || !teamLineup.possible || !teamLineup.possible.includes(player.id)) {
+      return null;
+    }
+    
+    // Cerca il compagno di ballottaggio
+    const allPossible = teamLineup.possible;
+    const playerIndex = allPossible.indexOf(player.id);
+    
+    // Cerca giocatori dello stesso ruolo nella lista possible
+    const playerData = players.find(p => p.id === player.id);
+    if (!playerData) return null;
+    
+    const sameRolePlayers = allPossible.filter(pid => {
+      const p = players.find(pp => pp.id === pid);
+      return p && p.roles.some(r => playerData.roles.includes(r));
+    });
+    
+    if (sameRolePlayers.length > 1) {
+      const otherPlayer = sameRolePlayers.find(pid => pid !== player.id);
+      if (otherPlayer) {
+        const otherData = players.find(p => p.id === otherPlayer);
+        return otherData ? otherData.name : null;
+      }
+    }
+    
+    return null;
+  };
 
   const isStarter = (player) => {
     const teamLineup = lineups[player.team];
@@ -287,9 +318,10 @@ function FantacalcioView({ onBack }) {
     },
     priceBadge: {
       color: '#ff9900',
-      fontSize: '16px',
+      fontSize: '15px',
       fontWeight: 'bold',
       letterSpacing: '1px',
+      whiteSpace: 'nowrap',
     },
     statValue: {
       fontSize: '13px',
@@ -309,6 +341,7 @@ function FantacalcioView({ onBack }) {
       borderRadius: '50%',
       display: 'inline-block',
       flexShrink: 0,
+      cursor: 'pointer',
     },
     roleBadge: {
       display: 'inline-block',
@@ -318,6 +351,12 @@ function FantacalcioView({ onBack }) {
       fontWeight: 'bold',
       letterSpacing: '0.5px',
       marginRight: '3px',
+    },
+    ballottaggioInfo: {
+      color: '#ff9900',
+      fontSize: '11px',
+      letterSpacing: '0.5px',
+      marginTop: '3px',
     },
     teamCard: {
       backgroundColor: 'rgba(0, 255, 0, 0.02)',
@@ -394,6 +433,8 @@ function FantacalcioView({ onBack }) {
     const isInTeam = myTeam.find(p => p.id === player.id);
     const starter = isStarter(player);
     const possibleStarter = isPossibleStarter(player);
+    const ballottaggio = getBallottaggio(player);
+    const isExpanded = expandedBallottaggio === player.id;
     
     return (
       <div key={player.id} style={{
@@ -403,8 +444,17 @@ function FantacalcioView({ onBack }) {
       }}>
         <div style={{flex: 1, minWidth: '200px'}}>
           <div style={styles.playerName}>
-            {starter && <span style={{...styles.statusDot, backgroundColor: '#00ff00', boxShadow: '0 0 5px #00ff00'}} />}
-            {possibleStarter && <span style={{...styles.statusDot, backgroundColor: '#ff9900', boxShadow: '0 0 5px #ff9900'}} />}
+            {starter && <span 
+              style={{...styles.statusDot, backgroundColor: '#00ff00', boxShadow: '0 0 5px #00ff00'}} 
+            />}
+            {possibleStarter && <span 
+              style={{...styles.statusDot, backgroundColor: '#ff9900', boxShadow: '0 0 5px #ff9900', cursor: 'pointer'}}
+              onClick={(e) => {
+                e.stopPropagation();
+                setExpandedBallottaggio(isExpanded ? null : player.id);
+              }}
+              title="Clicca per vedere il ballottaggio"
+            />}
             {!starter && !possibleStarter && <span style={{...styles.statusDot, backgroundColor: '#666'}} />}
             {player.name}
             {renderRoleBadges(player)}
@@ -414,9 +464,14 @@ function FantacalcioView({ onBack }) {
           <div style={styles.playerInfo}>
             {player.team}
           </div>
+          {isExpanded && ballottaggio && (
+            <div style={styles.ballottaggioInfo}>
+              Ballottaggio: {ballottaggio}
+            </div>
+          )}
         </div>
         
-        <div style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '5px'}}>
+        <div style={{display: 'flex', alignItems: 'center', gap: '15px'}}>
           <div style={styles.priceBadge}>
             {player.price} crediti
           </div>
