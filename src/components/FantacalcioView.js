@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import players from '../data/players';
+import lineups from '../data/lineups';
 
 function FantacalcioView({ onBack }) {
-  const [viewMode, setViewMode] = useState('list'); // 'list', 'asta', 'squadra'
+  const [viewMode, setViewMode] = useState('list');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRole, setSelectedRole] = useState('all');
+  const [selectedTeam, setSelectedTeam] = useState('all');
+  const [selectedCategory, setSelectedCategory] = useState('all');
   const [calledPlayers, setCalledPlayers] = useState([]);
   const [myTeam, setMyTeam] = useState([]);
   const [budget, setBudget] = useState(500);
@@ -18,12 +21,28 @@ function FantacalcioView({ onBack }) {
   }, []);
 
   const roles = ['all', 'Portiere', 'Difensore Centrale', 'Difensore Sinistro', 'Difensore Destro', 'Mediano', 'Centrocampista', 'Ala', 'Attaccante'];
+  const teams = ['all', ...new Set(players.map(p => p.team))].sort();
+  const categories = ['all', 'Top', 'Semi-Top', 'Terza Fascia', 'Quarta Fascia', 'Scommesse'];
+
+  const isStarter = (player) => {
+    const teamLineup = lineups[player.team];
+    if (!teamLineup) return false;
+    return teamLineup.starters.includes(player.id);
+  };
+
+  const isPossibleStarter = (player) => {
+    const teamLineup = lineups[player.team];
+    if (!teamLineup) return false;
+    return teamLineup.possible.includes(player.id);
+  };
 
   const filteredPlayers = players.filter(player => {
     const matchesSearch = player.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                          player.team.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = selectedRole === 'all' || player.role === selectedRole;
-    return matchesSearch && matchesRole;
+    const matchesTeam = selectedTeam === 'all' || player.team === selectedTeam;
+    const matchesCategory = selectedCategory === 'all' || player.category === selectedCategory;
+    return matchesSearch && matchesRole && matchesTeam && matchesCategory;
   });
 
   const toggleCalled = (playerId) => {
@@ -124,7 +143,7 @@ function FantacalcioView({ onBack }) {
     select: {
       width: '100%',
       padding: '10px',
-      marginBottom: '15px',
+      marginBottom: '10px',
       border: '1px solid #00ff00',
       borderRadius: '4px',
       fontSize: '14px',
@@ -133,6 +152,12 @@ function FantacalcioView({ onBack }) {
       color: '#00ff00',
       fontFamily: "'Courier New', monospace",
       boxSizing: 'border-box',
+    },
+    filterRow: {
+      display: 'grid',
+      gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr',
+      gap: '10px',
+      marginBottom: '10px',
     },
     playerCard: {
       backgroundColor: 'rgba(0, 255, 0, 0.02)',
@@ -150,6 +175,9 @@ function FantacalcioView({ onBack }) {
       color: '#00ff00',
       fontSize: '14px',
       fontWeight: 'bold',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
     },
     playerInfo: {
       color: '#00cc00',
@@ -159,6 +187,13 @@ function FantacalcioView({ onBack }) {
       color: '#ff4444',
       fontSize: '10px',
       fontWeight: 'bold',
+    },
+    statusDot: {
+      width: '10px',
+      height: '10px',
+      borderRadius: '50%',
+      display: 'inline-block',
+      flexShrink: 0,
     },
     teamCard: {
       backgroundColor: 'rgba(0, 255, 0, 0.02)',
@@ -181,9 +216,8 @@ function FantacalcioView({ onBack }) {
     },
   };
 
-  const renderListView = () => (
+  const renderFilters = () => (
     <div>
-      <h2 style={{color: '#00ff00', marginBottom: '15px'}}>[ LISTA GIOCATORI ]</h2>
       <input
         type="text"
         placeholder="Cerca giocatore o squadra..."
@@ -191,60 +225,85 @@ function FantacalcioView({ onBack }) {
         onChange={(e) => setSearchTerm(e.target.value)}
         style={styles.searchInput}
       />
-      <select
-        value={selectedRole}
-        onChange={(e) => setSelectedRole(e.target.value)}
-        style={styles.select}
-      >
-        {roles.map(role => (
-          <option key={role} value={role}>
-            {role === 'all' ? 'Tutti i ruoli' : role}
-          </option>
-        ))}
-      </select>
-      {filteredPlayers.map(player => (
-        <div key={player.id} style={styles.playerCard}>
-          <div>
-            <div style={styles.playerName}>{player.name}</div>
-            <div style={styles.playerInfo}>
-              {player.team} | {player.role} | {player.category}
+      <div style={styles.filterRow}>
+        <select
+          value={selectedRole}
+          onChange={(e) => setSelectedRole(e.target.value)}
+          style={styles.select}
+        >
+          {roles.map(role => (
+            <option key={role} value={role}>
+              {role === 'all' ? 'Tutti i ruoli' : role}
+            </option>
+          ))}
+        </select>
+        <select
+          value={selectedTeam}
+          onChange={(e) => setSelectedTeam(e.target.value)}
+          style={styles.select}
+        >
+          {teams.map(team => (
+            <option key={team} value={team}>
+              {team === 'all' ? 'Tutte le squadre' : team}
+            </option>
+          ))}
+        </select>
+        <select
+          value={selectedCategory}
+          onChange={(e) => setSelectedCategory(e.target.value)}
+          style={styles.select}
+        >
+          {categories.map(cat => (
+            <option key={cat} value={cat}>
+              {cat === 'all' ? 'Tutte le fasce' : cat}
+            </option>
+          ))}
+        </select>
+      </div>
+    </div>
+  );
+
+  const renderListView = () => (
+    <div>
+      <h2 style={{color: '#00ff00', marginBottom: '15px'}}>[ LISTA GIOCATORI ]</h2>
+      {renderFilters()}
+      {filteredPlayers.map(player => {
+        const starter = isStarter(player);
+        const possibleStarter = isPossibleStarter(player);
+        return (
+          <div key={player.id} style={styles.playerCard}>
+            <div>
+              <div style={styles.playerName}>
+                {starter && <span style={{...styles.statusDot, backgroundColor: '#00ff00', boxShadow: '0 0 5px #00ff00'}} />}
+                {possibleStarter && <span style={{...styles.statusDot, backgroundColor: '#ff9900', boxShadow: '0 0 5px #ff9900'}} />}
+                {!starter && !possibleStarter && <span style={{...styles.statusDot, backgroundColor: '#666'}} />}
+                {player.name}
+              </div>
+              <div style={styles.playerInfo}>
+                {player.team} | {player.role} | {player.category}
+              </div>
+            </div>
+            <div>
+              <div style={styles.playerInfo}>Prezzo: {player.price} cr</div>
+              <div style={styles.playerInfo}>
+                Tit: {player.titol} | Aff: {player.affid} | Int: {player.integr}
+              </div>
             </div>
           </div>
-          <div>
-            <div style={styles.playerInfo}>Prezzo: {player.price} cr</div>
-            <div style={styles.playerInfo}>
-              Tit: {player.titol} | Aff: {player.affid} | Int: {player.integr}
-            </div>
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 
   const renderAstaView = () => (
     <div>
       <h2 style={{color: '#00ff00', marginBottom: '15px'}}>[ MODALITÀ ASTA ]</h2>
-      <input
-        type="text"
-        placeholder="Cerca giocatore..."
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        style={styles.searchInput}
-      />
-      <select
-        value={selectedRole}
-        onChange={(e) => setSelectedRole(e.target.value)}
-        style={styles.select}
-      >
-        {roles.map(role => (
-          <option key={role} value={role}>
-            {role === 'all' ? 'Tutti i ruoli' : role}
-          </option>
-        ))}
-      </select>
+      {renderFilters()}
       {filteredPlayers.map(player => {
         const isCalled = calledPlayers.includes(player.id);
         const isInTeam = myTeam.find(p => p.id === player.id);
+        const starter = isStarter(player);
+        const possibleStarter = isPossibleStarter(player);
         return (
           <div key={player.id} style={{
             ...styles.playerCard,
@@ -253,6 +312,9 @@ function FantacalcioView({ onBack }) {
           }}>
             <div>
               <div style={styles.playerName}>
+                {starter && <span style={{...styles.statusDot, backgroundColor: '#00ff00', boxShadow: '0 0 5px #00ff00'}} />}
+                {possibleStarter && <span style={{...styles.statusDot, backgroundColor: '#ff9900', boxShadow: '0 0 5px #ff9900'}} />}
+                {!starter && !possibleStarter && <span style={{...styles.statusDot, backgroundColor: '#666'}} />}
                 {player.name}
                 {isCalled && <span style={styles.calledBadge}> [CHIAMATO]</span>}
                 {isInTeam && <span style={{color: '#00ff00'}}> [IN SQUADRA]</span>}
