@@ -8,10 +8,16 @@ function FantacalcioView({ onBack }) {
   const [selectedRole, setSelectedRole] = useState('all');
   const [selectedTeam, setSelectedTeam] = useState('all');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
+  const [minTitol, setMinTitol] = useState('');
+  const [minAffid, setMinAffid] = useState('');
+  const [minIntegr, setMinIntegr] = useState('');
   const [calledPlayers, setCalledPlayers] = useState([]);
   const [myTeam, setMyTeam] = useState([]);
   const [budget, setBudget] = useState(500);
   const [isMobile, setIsMobile] = useState(false);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -21,18 +27,18 @@ function FantacalcioView({ onBack }) {
   }, []);
 
   const roleColors = {
-    'Por': '#ffff00', // Giallo
-    'Ds': '#00ff00', // Verde
-    'Dd': '#00ff00', // Verde
-    'Dc': '#00ff00', // Verde
-    'B': '#00ff00', // Verde
-    'E': '#00ccff', // Blu
-    'M': '#00ccff', // Blu
-    'C': '#00ccff', // Blu
-    'T': '#9b59b6', // Viola
-    'W': '#9b59b6', // Viola
-    'A': '#ff4444', // Rosso
-    'Pc': '#ff4444', // Rosso
+    'Por': '#ffff00',
+    'Ds': '#00ff00',
+    'Dd': '#00ff00',
+    'Dc': '#00ff00',
+    'B': '#00ff00',
+    'E': '#00ccff',
+    'M': '#00ccff',
+    'C': '#00ccff',
+    'T': '#9b59b6',
+    'W': '#9b59b6',
+    'A': '#ff4444',
+    'Pc': '#ff4444',
   };
 
   const roleNames = {
@@ -68,13 +74,28 @@ function FantacalcioView({ onBack }) {
     return teamLineup.possible.includes(player.id);
   };
 
+  const getStatColor = (value) => {
+    if (value === undefined || value === null || value === 0) return '#666666';
+    if (value >= 4) return '#00ff00';
+    if (value === 3) return '#ff9900';
+    return '#ff4444';
+  };
+
   const filteredPlayers = players.filter(player => {
     const matchesSearch = player.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                          player.team.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = selectedRole === 'all' || (player.roles && player.roles.includes(selectedRole));
     const matchesTeam = selectedTeam === 'all' || player.team === selectedTeam;
     const matchesCategory = selectedCategory === 'all' || player.category === selectedCategory;
-    return matchesSearch && matchesRole && matchesTeam && matchesCategory;
+    
+    const matchesMinPrice = minPrice === '' || player.price >= parseInt(minPrice);
+    const matchesMaxPrice = maxPrice === '' || player.price <= parseInt(maxPrice);
+    const matchesMinTitol = minTitol === '' || player.titol >= parseInt(minTitol);
+    const matchesMinAffid = minAffid === '' || player.affid >= parseInt(minAffid);
+    const matchesMinIntegr = minIntegr === '' || player.integr >= parseInt(minIntegr);
+    
+    return matchesSearch && matchesRole && matchesTeam && matchesCategory && 
+           matchesMinPrice && matchesMaxPrice && matchesMinTitol && matchesMinAffid && matchesMinIntegr;
   });
 
   const groupedPlayers = () => {
@@ -202,6 +223,32 @@ function FantacalcioView({ onBack }) {
       gap: '10px',
       marginBottom: '10px',
     },
+    advancedFiltersRow: {
+      display: 'grid',
+      gridTemplateColumns: isMobile ? '1fr 1fr' : '1fr 1fr 1fr 1fr 1fr 1fr',
+      gap: '10px',
+      marginBottom: '10px',
+    },
+    advancedInput: {
+      width: '100%',
+      padding: '8px',
+      marginBottom: '10px',
+      border: '1px solid #ff9900',
+      borderRadius: '4px',
+      fontSize: '12px',
+      outline: 'none',
+      backgroundColor: 'transparent',
+      color: '#ff9900',
+      fontFamily: "'Courier New', monospace",
+      boxSizing: 'border-box',
+    },
+    advancedLabel: {
+      color: '#ff9900',
+      fontSize: '10px',
+      letterSpacing: '1px',
+      marginBottom: '5px',
+      display: 'block',
+    },
     categoryHeader: {
       color: '#ff9900',
       fontSize: '16px',
@@ -244,11 +291,12 @@ function FantacalcioView({ onBack }) {
       fontWeight: 'bold',
       letterSpacing: '1px',
     },
-    statsBadge: {
-      color: '#00ccff',
-      fontSize: '12px',
+    statValue: {
+      fontSize: '13px',
       fontWeight: 'bold',
       letterSpacing: '0.5px',
+      padding: '2px 6px',
+      borderRadius: '3px',
     },
     calledBadge: {
       color: '#ff4444',
@@ -290,6 +338,20 @@ function FantacalcioView({ onBack }) {
       fontSize: '12px',
       marginBottom: '5px',
     },
+    toggleFiltersButton: {
+      width: '100%',
+      padding: '8px',
+      backgroundColor: 'transparent',
+      color: '#ff9900',
+      border: '1px solid #ff9900',
+      borderRadius: '4px',
+      fontSize: '11px',
+      cursor: 'pointer',
+      fontFamily: "'Courier New', monospace",
+      letterSpacing: '1px',
+      marginBottom: '10px',
+      textTransform: 'uppercase',
+    },
   };
 
   const renderRoleBadges = (player) => {
@@ -308,6 +370,23 @@ function FantacalcioView({ onBack }) {
         {role}
       </span>
     ));
+  };
+
+  const renderStatValue = (label, value) => {
+    const color = getStatColor(value);
+    return (
+      <span
+        style={{
+          ...styles.statValue,
+          color: color,
+          backgroundColor: `${color}22`,
+          border: `1px solid ${color}`,
+        }}
+        title={`${label}: ${value}/5`}
+      >
+        {value}
+      </span>
+    );
   };
 
   const renderPlayerCard = (player, isAstaMode = false) => {
@@ -339,10 +418,15 @@ function FantacalcioView({ onBack }) {
         
         <div style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '5px'}}>
           <div style={styles.priceBadge}>
-            {player.price} cr
+            {player.price} crediti
           </div>
-          <div style={styles.statsBadge}>
-            Tit: {player.titol} | Aff: {player.affid} | Int: {player.integr}
+          <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
+            <span style={{color: '#666', fontSize: '10px'}}>Tit:</span>
+            {renderStatValue('Titolarità', player.titol)}
+            <span style={{color: '#666', fontSize: '10px'}}>Aff:</span>
+            {renderStatValue('Affidabilità', player.affid)}
+            <span style={{color: '#666', fontSize: '10px'}}>Int:</span>
+            {renderStatValue('Integrità', player.integr)}
           </div>
         </div>
         
@@ -429,6 +513,76 @@ function FantacalcioView({ onBack }) {
           ))}
         </select>
       </div>
+      
+      <button 
+        style={styles.toggleFiltersButton}
+        onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+      >
+        {showAdvancedFilters ? '[ NASCONDI FILTRI AVANZATI ]' : '[ MOSTRA FILTRI AVANZATI ]'}
+      </button>
+      
+      {showAdvancedFilters && (
+        <div style={styles.advancedFiltersRow}>
+          <div>
+            <label style={styles.advancedLabel}>Crediti Min:</label>
+            <input
+              type="number"
+              placeholder="Min"
+              value={minPrice}
+              onChange={(e) => setMinPrice(e.target.value)}
+              style={styles.advancedInput}
+              min="0"
+            />
+          </div>
+          <div>
+            <label style={styles.advancedLabel}>Crediti Max:</label>
+            <input
+              type="number"
+              placeholder="Max"
+              value={maxPrice}
+              onChange={(e) => setMaxPrice(e.target.value)}
+              style={styles.advancedInput}
+              min="0"
+            />
+          </div>
+          <div>
+            <label style={styles.advancedLabel}>Titolarità Min:</label>
+            <input
+              type="number"
+              placeholder="1-5"
+              value={minTitol}
+              onChange={(e) => setMinTitol(e.target.value)}
+              style={styles.advancedInput}
+              min="1"
+              max="5"
+            />
+          </div>
+          <div>
+            <label style={styles.advancedLabel}>Affidabilità Min:</label>
+            <input
+              type="number"
+              placeholder="1-5"
+              value={minAffid}
+              onChange={(e) => setMinAffid(e.target.value)}
+              style={styles.advancedInput}
+              min="1"
+              max="5"
+            />
+          </div>
+          <div>
+            <label style={styles.advancedLabel}>Integrità Min:</label>
+            <input
+              type="number"
+              placeholder="1-5"
+              value={minIntegr}
+              onChange={(e) => setMinIntegr(e.target.value)}
+              style={styles.advancedInput}
+              min="1"
+              max="5"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -504,7 +658,7 @@ function FantacalcioView({ onBack }) {
                 {renderRoleBadges(player)}
               </div>
               <div style={styles.playerInfo}>
-                {player.team} | Pagato: {player.paidPrice} cr
+                {player.team} | Pagato: {player.paidPrice} crediti
               </div>
             </div>
             <button
