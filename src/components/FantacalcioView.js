@@ -3,7 +3,7 @@ import players from '../data/players';
 import lineups from '../data/lineups';
 
 function FantacalcioView({ onBack }) {
-  const [mainMode, setMainMode] = useState('visualizza'); // 'visualizza' o 'asta'
+  const [mainMode, setMainMode] = useState('visualizza');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRoles, setSelectedRoles] = useState([]);
   const [selectedTeam, setSelectedTeam] = useState('all');
@@ -256,7 +256,7 @@ function FantacalcioView({ onBack }) {
 
   const addToTeam = (player, price) => {
     if (myTeam.find(p => p.id === player.id)) {
-      alert('Giocatore già in squadra!');
+      alert('Giocatore gia in squadra!');
       return;
     }
     setMyTeam([...myTeam, { ...player, paidPrice: price }]);
@@ -339,7 +339,7 @@ function FantacalcioView({ onBack }) {
       backgroundColor: 'rgba(0, 255, 0, 0.1)',
       color: '#00ff00',
       letterSpacing: '1px',
-      fontFamily: "'Courier New', monospace',
+      fontFamily: "'Courier New', monospace",
       transition: 'all 0.3s',
       textTransform: 'uppercase',
       fontWeight: 'bold',
@@ -748,7 +748,7 @@ function FantacalcioView({ onBack }) {
           backgroundColor: `${color}22`,
           border: `1px solid ${color}`,
         }}
-        title={`${label}: ${value}/5`}
+        title={label + ': ' + value + '/5'}
       >
         {value}
       </span>
@@ -803,11 +803,11 @@ function FantacalcioView({ onBack }) {
           </div>
           <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
             <span style={{color: '#666', fontSize: '10px'}}>Tit:</span>
-            {renderStatValue('Titolarità', player.titol)}
+            {renderStatValue('Titolarita', player.titol)}
             <span style={{color: '#666', fontSize: '10px'}}>Aff:</span>
-            {renderStatValue('Affidabilità', player.affid)}
+            {renderStatValue('Affidabilita', player.affid)}
             <span style={{color: '#666', fontSize: '10px'}}>Int:</span>
-            {renderStatValue('Integrità', player.integr)}
+            {renderStatValue('Integrita', player.integr)}
           </div>
         </div>
         
@@ -989,7 +989,7 @@ function FantacalcioView({ onBack }) {
             />
           </div>
           <div>
-            <label style={styles.advancedLabel}>Titolarità Min:</label>
+            <label style={styles.advancedLabel}>Titolarita Min:</label>
             <input
               type="number"
               placeholder="1-5"
@@ -1001,7 +1001,7 @@ function FantacalcioView({ onBack }) {
             />
           </div>
           <div>
-            <label style={styles.advancedLabel}>Affidabilità Min:</label>
+            <label style={styles.advancedLabel}>Affidabilita Min:</label>
             <input
               type="number"
               placeholder="1-5"
@@ -1013,7 +1013,7 @@ function FantacalcioView({ onBack }) {
             />
           </div>
           <div>
-            <label style={styles.advancedLabel}>Integrità Min:</label>
+            <label style={styles.advancedLabel}>Integrita Min:</label>
             <input
               type="number"
               placeholder="1-5"
@@ -1204,13 +1204,11 @@ function FantacalcioView({ onBack }) {
             setShowTeamView(false);
           }}
         >
-          [ MODALITÀ: VISUALIZZA ]
+          [ MODALITA: VISUALIZZA ]
         </button>
         
         {mainMode === 'visualizza' && (
-          <button 
-            style={styles.buttonActive}
-          >
+          <button style={styles.buttonActive}>
             [ LISTA ]
           </button>
         )}
@@ -1242,7 +1240,7 @@ function FantacalcioView({ onBack }) {
             setShowTeamView(false);
           }}
         >
-          [ MODALITÀ: ASTA ]
+          [ MODALITA: ASTA ]
         </button>
       </div>
 
@@ -1289,7 +1287,7 @@ function FantacalcioView({ onBack }) {
                 [ NESSUNA ASTA ATTIVA ]
               </p>
               <p style={{color: '#666', fontSize: '12px', marginBottom: '20px'}}>
-                Crea una nuova asta o seleziona un'asta esistente
+                Crea una nuova asta o seleziona un asta esistente
               </p>
               <button
                 style={{...styles.button, borderColor: '#ff9900', color: '#ff9900'}}
