@@ -26,7 +26,7 @@ function FantacalcioView({ onBack }) {
     'Dd': '#00ff00', // Verde
     'Dc': '#00ff00', // Verde
     'B': '#00ff00', // Verde
-    'E': '#00ff00', // Verde
+    'E': '#00ccff', // Blu
     'M': '#00ccff', // Blu
     'C': '#00ccff', // Blu
     'T': '#9b59b6', // Viola
@@ -50,9 +50,11 @@ function FantacalcioView({ onBack }) {
     'Pc': 'Prima Punta',
   };
 
+  const categoryOrder = ['Top', 'Semi-Top', 'Terza Fascia', 'Quarta Fascia', 'Scommesse'];
+
   const allRoles = ['all', 'Por', 'Ds', 'Dd', 'Dc', 'B', 'E', 'M', 'C', 'T', 'W', 'A', 'Pc'];
   const teams = ['all', ...new Set(players.map(p => p.team))].sort();
-  const categories = ['all', 'Top', 'Semi-Top', 'Terza Fascia', 'Quarta Fascia', 'Scommesse'];
+  const categories = ['all', ...categoryOrder];
 
   const isStarter = (player) => {
     const teamLineup = lineups[player.team];
@@ -74,6 +76,17 @@ function FantacalcioView({ onBack }) {
     const matchesCategory = selectedCategory === 'all' || player.category === selectedCategory;
     return matchesSearch && matchesRole && matchesTeam && matchesCategory;
   });
+
+  const groupedPlayers = () => {
+    const grouped = {};
+    categoryOrder.forEach(cat => {
+      const playersInCat = filteredPlayers.filter(p => p.category === cat);
+      if (playersInCat.length > 0) {
+        grouped[cat] = playersInCat;
+      }
+    });
+    return grouped;
+  };
 
   const toggleCalled = (playerId) => {
     setCalledPlayers(prev => 
@@ -189,6 +202,17 @@ function FantacalcioView({ onBack }) {
       gap: '10px',
       marginBottom: '10px',
     },
+    categoryHeader: {
+      color: '#ff9900',
+      fontSize: '16px',
+      fontWeight: 'bold',
+      marginTop: '20px',
+      marginBottom: '10px',
+      letterSpacing: '2px',
+      borderBottom: '1px solid #ff9900',
+      paddingBottom: '5px',
+      textTransform: 'uppercase',
+    },
     playerCard: {
       backgroundColor: 'rgba(0, 255, 0, 0.02)',
       border: '1px solid rgba(0, 255, 0, 0.3)',
@@ -203,7 +227,7 @@ function FantacalcioView({ onBack }) {
     },
     playerName: {
       color: '#00ff00',
-      fontSize: '14px',
+      fontSize: '15px',
       fontWeight: 'bold',
       display: 'flex',
       alignItems: 'center',
@@ -212,7 +236,19 @@ function FantacalcioView({ onBack }) {
     },
     playerInfo: {
       color: '#00cc00',
-      fontSize: '11px',
+      fontSize: '12px',
+    },
+    priceBadge: {
+      color: '#ff9900',
+      fontSize: '16px',
+      fontWeight: 'bold',
+      letterSpacing: '1px',
+    },
+    statsBadge: {
+      color: '#00ccff',
+      fontSize: '12px',
+      fontWeight: 'bold',
+      letterSpacing: '0.5px',
     },
     calledBadge: {
       color: '#ff4444',
@@ -274,6 +310,81 @@ function FantacalcioView({ onBack }) {
     ));
   };
 
+  const renderPlayerCard = (player, isAstaMode = false) => {
+    const isCalled = calledPlayers.includes(player.id);
+    const isInTeam = myTeam.find(p => p.id === player.id);
+    const starter = isStarter(player);
+    const possibleStarter = isPossibleStarter(player);
+    
+    return (
+      <div key={player.id} style={{
+        ...styles.playerCard,
+        opacity: isAstaMode && isCalled ? 0.5 : 1,
+        backgroundColor: isAstaMode && isInTeam ? 'rgba(0, 255, 0, 0.1)' : 'rgba(0, 255, 0, 0.02)',
+      }}>
+        <div style={{flex: 1, minWidth: '200px'}}>
+          <div style={styles.playerName}>
+            {starter && <span style={{...styles.statusDot, backgroundColor: '#00ff00', boxShadow: '0 0 5px #00ff00'}} />}
+            {possibleStarter && <span style={{...styles.statusDot, backgroundColor: '#ff9900', boxShadow: '0 0 5px #ff9900'}} />}
+            {!starter && !possibleStarter && <span style={{...styles.statusDot, backgroundColor: '#666'}} />}
+            {player.name}
+            {renderRoleBadges(player)}
+            {isAstaMode && isCalled && <span style={styles.calledBadge}> [CHIAMATO]</span>}
+            {isAstaMode && isInTeam && <span style={{color: '#00ff00'}}> [IN SQUADRA]</span>}
+          </div>
+          <div style={styles.playerInfo}>
+            {player.team}
+          </div>
+        </div>
+        
+        <div style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '5px'}}>
+          <div style={styles.priceBadge}>
+            {player.price} cr
+          </div>
+          <div style={styles.statsBadge}>
+            Tit: {player.titol} | Aff: {player.affid} | Int: {player.integr}
+          </div>
+        </div>
+        
+        {isAstaMode && (
+          <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
+            <button
+              onClick={() => toggleCalled(player.id)}
+              style={{
+                ...styles.button,
+                padding: '5px 10px',
+                fontSize: '10px',
+                borderColor: isCalled ? '#ff4444' : '#ff9900',
+                color: isCalled ? '#ff4444' : '#ff9900',
+              }}
+            >
+              {isCalled ? 'ANNULLA' : 'CHIAMATO'}
+            </button>
+            {!isInTeam && (
+              <button
+                onClick={() => {
+                  const price = prompt(`Prezzo per ${player.name}:`, player.price.toString());
+                  if (price !== null) {
+                    addToTeam(player, parseInt(price) || 0);
+                  }
+                }}
+                style={{
+                  ...styles.button,
+                  padding: '5px 10px',
+                  fontSize: '10px',
+                  borderColor: '#00ccff',
+                  color: '#00ccff',
+                }}
+              >
+                +
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderFilters = () => (
     <div>
       <input
@@ -321,106 +432,41 @@ function FantacalcioView({ onBack }) {
     </div>
   );
 
-  const renderListView = () => (
-    <div>
-      <h2 style={{color: '#00ff00', marginBottom: '15px'}}>[ LISTA GIOCATORI ]</h2>
-      {renderFilters()}
-      {filteredPlayers.map(player => {
-        const starter = isStarter(player);
-        const possibleStarter = isPossibleStarter(player);
-        return (
-          <div key={player.id} style={styles.playerCard}>
-            <div>
-              <div style={styles.playerName}>
-                {starter && <span style={{...styles.statusDot, backgroundColor: '#00ff00', boxShadow: '0 0 5px #00ff00'}} />}
-                {possibleStarter && <span style={{...styles.statusDot, backgroundColor: '#ff9900', boxShadow: '0 0 5px #ff9900'}} />}
-                {!starter && !possibleStarter && <span style={{...styles.statusDot, backgroundColor: '#666'}} />}
-                {player.name}
-                {renderRoleBadges(player)}
-              </div>
-              <div style={styles.playerInfo}>
-                {player.team} | {player.category}
-              </div>
-            </div>
-            <div>
-              <div style={styles.playerInfo}>Prezzo: {player.price} cr</div>
-              <div style={styles.playerInfo}>
-                Tit: {player.titol} | Aff: {player.affid} | Int: {player.integr}
-              </div>
-            </div>
+  const renderListView = () => {
+    const grouped = groupedPlayers();
+    return (
+      <div>
+        <h2 style={{color: '#00ff00', marginBottom: '15px'}}>[ LISTA GIOCATORI ]</h2>
+        {renderFilters()}
+        {Object.keys(grouped).map(category => (
+          <div key={category}>
+            <h3 style={styles.categoryHeader}>
+              {category}
+            </h3>
+            {grouped[category].map(player => renderPlayerCard(player, false))}
           </div>
-        );
-      })}
-    </div>
-  );
+        ))}
+      </div>
+    );
+  };
 
-  const renderAstaView = () => (
-    <div>
-      <h2 style={{color: '#00ff00', marginBottom: '15px'}}>[ MODALITÀ ASTA ]</h2>
-      {renderFilters()}
-      {filteredPlayers.map(player => {
-        const isCalled = calledPlayers.includes(player.id);
-        const isInTeam = myTeam.find(p => p.id === player.id);
-        const starter = isStarter(player);
-        const possibleStarter = isPossibleStarter(player);
-        return (
-          <div key={player.id} style={{
-            ...styles.playerCard,
-            opacity: isCalled ? 0.5 : 1,
-            backgroundColor: isInTeam ? 'rgba(0, 255, 0, 0.1)' : 'rgba(0, 255, 0, 0.02)',
-          }}>
-            <div>
-              <div style={styles.playerName}>
-                {starter && <span style={{...styles.statusDot, backgroundColor: '#00ff00', boxShadow: '0 0 5px #00ff00'}} />}
-                {possibleStarter && <span style={{...styles.statusDot, backgroundColor: '#ff9900', boxShadow: '0 0 5px #ff9900'}} />}
-                {!starter && !possibleStarter && <span style={{...styles.statusDot, backgroundColor: '#666'}} />}
-                {player.name}
-                {renderRoleBadges(player)}
-                {isCalled && <span style={styles.calledBadge}> [CHIAMATO]</span>}
-                {isInTeam && <span style={{color: '#00ff00'}}> [IN SQUADRA]</span>}
-              </div>
-              <div style={styles.playerInfo}>
-                {player.team} | Prezzo: {player.price}
-              </div>
-            </div>
-            <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
-              <button
-                onClick={() => toggleCalled(player.id)}
-                style={{
-                  ...styles.button,
-                  padding: '5px 10px',
-                  fontSize: '10px',
-                  borderColor: isCalled ? '#ff4444' : '#ff9900',
-                  color: isCalled ? '#ff4444' : '#ff9900',
-                }}
-              >
-                {isCalled ? 'ANNULLA' : 'CHIAMATO'}
-              </button>
-              {!isInTeam && (
-                <button
-                  onClick={() => {
-                    const price = prompt(`Prezzo per ${player.name}:`, player.price.toString());
-                    if (price !== null) {
-                      addToTeam(player, parseInt(price) || 0);
-                    }
-                  }}
-                  style={{
-                    ...styles.button,
-                    padding: '5px 10px',
-                    fontSize: '10px',
-                    borderColor: '#00ccff',
-                    color: '#00ccff',
-                  }}
-                >
-                  +
-                </button>
-              )}
-            </div>
+  const renderAstaView = () => {
+    const grouped = groupedPlayers();
+    return (
+      <div>
+        <h2 style={{color: '#00ff00', marginBottom: '15px'}}>[ MODALITÀ ASTA ]</h2>
+        {renderFilters()}
+        {Object.keys(grouped).map(category => (
+          <div key={category}>
+            <h3 style={styles.categoryHeader}>
+              {category}
+            </h3>
+            {grouped[category].map(player => renderPlayerCard(player, true))}
           </div>
-        );
-      })}
-    </div>
-  );
+        ))}
+      </div>
+    );
+  };
 
   const renderSquadraView = () => (
     <div>
