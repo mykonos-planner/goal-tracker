@@ -5,7 +5,7 @@ import lineups from '../data/lineups';
 function FantacalcioView({ onBack }) {
   const [viewMode, setViewMode] = useState('list');
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedRoles, setSelectedRoles] = useState([]); // Ora è un array
+  const [selectedRoles, setSelectedRoles] = useState([]);
   const [selectedTeam, setSelectedTeam] = useState('all');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [minPrice, setMinPrice] = useState('');
@@ -20,6 +20,8 @@ function FantacalcioView({ onBack }) {
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [expandedBallottaggio, setExpandedBallottaggio] = useState(null);
   const [showRoleSelector, setShowRoleSelector] = useState(false);
+  const [buyingPlayer, setBuyingPlayer] = useState(null);
+  const [buyPrice, setBuyPrice] = useState('');
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -125,7 +127,6 @@ function FantacalcioView({ onBack }) {
     const matchesSearch = player.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                          player.team.toLowerCase().includes(searchTerm.toLowerCase());
     
-    // Se non ci sono ruoli selezionati, mostra tutti
     const matchesRole = selectedRoles.length === 0 || 
       selectedRoles.every(role => player.roles && player.roles.includes(role));
     
@@ -157,6 +158,27 @@ function FantacalcioView({ onBack }) {
     setCalledPlayers(prev => 
       prev.includes(playerId) ? prev.filter(id => id !== playerId) : [...prev, playerId]
     );
+  };
+
+  const startBuying = (player) => {
+    setBuyingPlayer(player.id);
+    setBuyPrice(player.price.toString());
+  };
+
+  const confirmBuy = () => {
+    if (buyingPlayer && buyPrice !== '') {
+      const player = players.find(p => p.id === buyingPlayer);
+      if (player) {
+        addToTeam(player, parseInt(buyPrice) || 0);
+      }
+      setBuyingPlayer(null);
+      setBuyPrice('');
+    }
+  };
+
+  const cancelBuy = () => {
+    setBuyingPlayer(null);
+    setBuyPrice('');
   };
 
   const addToTeam = (player, price) => {
@@ -479,6 +501,56 @@ function FantacalcioView({ onBack }) {
       marginBottom: '10px',
       textTransform: 'uppercase',
     },
+    buyPanel: {
+      backgroundColor: 'rgba(0, 204, 255, 0.05)',
+      border: '1px solid #00ccff',
+      borderRadius: '4px',
+      padding: '10px',
+      marginTop: '8px',
+      display: 'flex',
+      gap: '8px',
+      alignItems: 'center',
+      flexWrap: 'wrap',
+      width: '100%',
+    },
+    buyInput: {
+      width: '80px',
+      padding: '8px',
+      border: '1px solid #00ccff',
+      borderRadius: '4px',
+      fontSize: '14px',
+      outline: 'none',
+      backgroundColor: 'transparent',
+      color: '#00ccff',
+      fontFamily: "'Courier New', monospace",
+      textAlign: 'center',
+      boxSizing: 'border-box',
+    },
+    buyButton: {
+      padding: '8px 15px',
+      backgroundColor: 'transparent',
+      color: '#00ccff',
+      border: '1px solid #00ccff',
+      borderRadius: '4px',
+      fontSize: '11px',
+      cursor: 'pointer',
+      fontFamily: "'Courier New', monospace",
+      letterSpacing: '1px',
+      transition: 'all 0.3s',
+      fontWeight: 'bold',
+    },
+    cancelBuyButton: {
+      padding: '8px 15px',
+      backgroundColor: 'transparent',
+      color: '#ff4444',
+      border: '1px solid #ff4444',
+      borderRadius: '4px',
+      fontSize: '11px',
+      cursor: 'pointer',
+      fontFamily: "'Courier New', monospace",
+      letterSpacing: '1px',
+      transition: 'all 0.3s',
+    },
   };
 
   const renderRoleBadges = (player) => {
@@ -523,6 +595,7 @@ function FantacalcioView({ onBack }) {
     const possibleStarter = isPossibleStarter(player);
     const ballottaggio = getBallottaggio(player);
     const isExpanded = expandedBallottaggio === player.id;
+    const isBuying = buyingPlayer === player.id;
     
     return (
       <div key={player.id} style={{
@@ -587,14 +660,9 @@ function FantacalcioView({ onBack }) {
             >
               {isCalled ? 'ANNULLA' : 'CHIAMATO'}
             </button>
-            {!isInTeam && (
+            {!isInTeam && !isBuying && (
               <button
-                onClick={() => {
-                  const price = prompt(`Prezzo per ${player.name}:`, player.price.toString());
-                  if (price !== null) {
-                    addToTeam(player, parseInt(price) || 0);
-                  }
-                }}
+                onClick={() => startBuying(player)}
                 style={{
                   ...styles.button,
                   padding: '5px 10px',
@@ -606,6 +674,36 @@ function FantacalcioView({ onBack }) {
                 +
               </button>
             )}
+          </div>
+        )}
+        
+        {isBuying && (
+          <div style={styles.buyPanel}>
+            <input
+              type="number"
+              value={buyPrice}
+              onChange={(e) => setBuyPrice(e.target.value)}
+              style={styles.buyInput}
+              min="0"
+              autoFocus
+            />
+            <span style={{color: '#00ccff', fontSize: '11px'}}>crediti</span>
+            <button
+              onClick={confirmBuy}
+              style={styles.buyButton}
+              onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(0, 204, 255, 0.1)'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+            >
+              [ CONFERMA ]
+            </button>
+            <button
+              onClick={cancelBuy}
+              style={styles.cancelBuyButton}
+              onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(255, 68, 68, 0.1)'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+            >
+              [ ANNULLA ]
+            </button>
           </div>
         )}
       </div>
