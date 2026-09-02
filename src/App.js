@@ -479,7 +479,6 @@ function FantacalcioView({ onBack }) {
       letterSpacing: '0.5px',
       marginTop: '5px',
     },
-  };
       tagSelectorContainer: {
       marginBottom: '10px',
     },
