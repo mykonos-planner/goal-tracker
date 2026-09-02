@@ -1,426 +1,328 @@
 import React, { useState, useEffect } from 'react';
-import GoalForm from './components/GoalForm';
-import ProgressBars from './components/ProgressBars';
-import CalendarView from './components/CalendarView';
-import TodayView from './components/TodayView';
-import NetworkView from './components/NetworkView';
-import FantacalcioView from './components/FantacalcioView';
+import players from '../data/players';
+import lineups from '../data/lineups';
 
-function App() {
-  const [goals, setGoals] = useState([]);
-  const [currentSection, setCurrentSection] = useState('home');
-  const [showAddGoal, setShowAddGoal] = useState(false);
-  const [viewMode, setViewMode] = useState('today');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [showDeleteAll, setShowDeleteAll] = useState(false);
-  const [showViewMenu, setShowViewMenu] = useState(false);
-  const [currentTime, setCurrentTime] = useState(new Date());
+function FantacalcioView({ onBack }) {
+  const [mainMode, setMainMode] = useState('visualizza');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedRoles, setSelectedRoles] = useState([]);
+  const [selectedTeam, setSelectedTeam] = useState('all');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedTags, setSelectedTags] = useState([]);
+  const [showTagSelector, setShowTagSelector] = useState(false);
+  const [showStats, setShowStats] = useState(false);
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
+  const [minTitol, setMinTitol] = useState('');
+  const [minAffid, setMinAffid] = useState('');
+  const [minIntegr, setMinIntegr] = useState('');
+  const [calledPlayers, setCalledPlayers] = useState([]);
+  const [myTeam, setMyTeam] = useState([]);
+  const [budget, setBudget] = useState(500);
   const [isMobile, setIsMobile] = useState(false);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [expandedBallottaggio, setExpandedBallottaggio] = useState(null);
+  const [showRoleSelector, setShowRoleSelector] = useState(false);
+  const [buyingPlayer, setBuyingPlayer] = useState(null);
+  const [buyPrice, setBuyPrice] = useState('');
+  const [auctions, setAuctions] = useState([]);
+  const [currentAuction, setCurrentAuction] = useState(null);
+  const [showAuctionModal, setShowAuctionModal] = useState(false);
+  const [newAuctionName, setNewAuctionName] = useState('');
+  const [showAuctionList, setShowAuctionList] = useState(false);
+  const [showTeamView, setShowTeamView] = useState(false);
+  const [expandedPlayer, setExpandedPlayer] = useState(null);
 
   useEffect(() => {
-    fetchGoals();
-    
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
-    
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
     handleResize();
     window.addEventListener('resize', handleResize);
     
-    return () => {
-      clearInterval(timer);
-      window.removeEventListener('resize', handleResize);
-    };
+    const savedAuctions = localStorage.getItem('fantacalcio_auctions');
+    if (savedAuctions) {
+      setAuctions(JSON.parse(savedAuctions));
+    }
+    
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const fetchGoals = async () => {
-    try {
-      const response = await fetch('/api/goals');
-      if (!response.ok) throw new Error('Failed to fetch goals');
-      const data = await response.json();
-      
-      const goalsArray = Array.isArray(data) ? data : [];
-      
-      const normalizedGoals = goalsArray.map(goal => ({
-        ...goal,
-        id: goal.id || goal._id || `goal_${Date.now()}`,
-        dailyHistory: goal.dailyHistory || [],
-        checkedToday: goal.checkedToday || false,
-        duration: goal.duration || 0,
-        durationType: goal.durationType || 'days',
-        name: goal.name || 'Obiettivo senza nome',
-        description: goal.description || '',
-        startDate: goal.startDate || new Date().toISOString(),
-        frequency: goal.frequency || 'daily',
-        frequencyDays: goal.frequencyDays || [],
-        color: goal.color || '#00ff00',
-      }));
-      
-      setGoals(normalizedGoals);
-      setError(null);
-    } catch (err) {
-      console.error('Error fetching goals:', err);
-      setError('Errore nel caricamento degli obiettivi dal database');
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    localStorage.setItem('fantacalcio_auctions', JSON.stringify(auctions));
+  }, [auctions]);
+
+  const allTags = [...new Set(players.flatMap(p => p.tags || []))].sort();
+
+  const createAuction = () => {
+    if (newAuctionName.trim()) {
+      const newAuction = {
+        id: `asta_${Date.now()}`,
+        name: newAuctionName.trim(),
+        budget: 500,
+        calledPlayers: [],
+        myTeam: [],
+        createdAt: new Date().toISOString(),
+      };
+      setAuctions([...auctions, newAuction]);
+      setCurrentAuction(newAuction);
+      setCalledPlayers([]);
+      setMyTeam([]);
+      setBudget(500);
+      setNewAuctionName('');
+      setShowAuctionModal(false);
+      setShowTeamView(false);
     }
   };
 
-  const addGoal = async (newGoal) => {
-    try {
-      setLoading(true);
-      
-      const response = await fetch('/api/goals', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(newGoal),
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to add goal');
-      }
-      
-      const createdGoal = await response.json();
-      
-      setGoals(prevGoals => [createdGoal, ...prevGoals]);
-      setShowAddGoal(false);
-      setError(null);
-      
-      await fetchGoals();
-      
-      return true;
-    } catch (err) {
-      console.error('Error adding goal:', err);
-      setError('Errore nell\'aggiunta dell\'obiettivo');
-      alert('Errore nell\'aggiunta dell\'obiettivo: ' + err.message);
-      return false;
-    } finally {
-      setLoading(false);
+  const loadAuction = (auction) => {
+    setCurrentAuction(auction);
+    setCalledPlayers(auction.calledPlayers || []);
+    setMyTeam(auction.myTeam || []);
+    setBudget(auction.budget || 500);
+    setShowAuctionList(false);
+    setShowTeamView(false);
+  };
+
+  const saveAuction = () => {
+    if (currentAuction) {
+      const updatedAuction = {
+        ...currentAuction,
+        budget: budget,
+        calledPlayers: calledPlayers,
+        myTeam: myTeam,
+        updatedAt: new Date().toISOString(),
+      };
+      setAuctions(auctions.map(a => a.id === currentAuction.id ? updatedAuction : a));
+      setCurrentAuction(updatedAuction);
+      alert('Asta salvata con successo!');
     }
   };
 
-  const deleteGoal = async (goalId) => {
-    try {
-      const encodedId = encodeURIComponent(goalId);
-      
-      const response = await fetch(`/api/goals/${encodedId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ action: 'delete' }),
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to delete goal');
+  const deleteAuction = (auctionId) => {
+    if (window.confirm('Sei sicuro di voler eliminare questa asta?')) {
+      setAuctions(auctions.filter(a => a.id !== auctionId));
+      if (currentAuction && currentAuction.id === auctionId) {
+        setCurrentAuction(null);
+        setCalledPlayers([]);
+        setMyTeam([]);
+        setBudget(500);
       }
-      
-      setGoals(prevGoals => prevGoals.filter(goal => {
-        const goalIdToCheck = goal.id || goal._id;
-        return goalIdToCheck !== goalId;
-      }));
-      
-      setError(null);
-      await fetchGoals();
-      
-    } catch (err) {
-      console.error('Error deleting goal:', err);
-      setError('Errore nell\'eliminazione dell\'obiettivo');
-      alert('Errore nell\'eliminazione dell\'obiettivo: ' + err.message);
     }
   };
 
-  const deleteAllGoals = async () => {
-    try {
-      setLoading(true);
-      
-      const response = await fetch('/api/goals/delete-all', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ action: 'delete-all' }),
-      });
-      
-      const responseData = await response.json().catch(() => ({}));
-      
-      if (!response.ok) {
-        throw new Error(responseData.error || 'Failed to delete all goals');
+  const roleColors = {
+    'Por': '#ffff00',
+    'Ds': '#00ff00',
+    'Dd': '#00ff00',
+    'Dc': '#00ff00',
+    'B': '#00ff00',
+    'E': '#00ccff',
+    'M': '#00ccff',
+    'C': '#00ccff',
+    'T': '#9b59b6',
+    'W': '#9b59b6',
+    'A': '#ff4444',
+    'Pc': '#ff4444',
+  };
+
+  const roleNames = {
+    'Por': 'Portiere',
+    'Ds': 'Difensore Sinistro',
+    'Dd': 'Difensore Destro',
+    'Dc': 'Difensore Centrale',
+    'B': 'Braccetto',
+    'E': 'Esterno',
+    'M': 'Mediano',
+    'C': 'Centrocampista',
+    'T': 'Trequartista',
+    'W': 'Ala',
+    'A': 'Attaccante',
+    'Pc': 'Prima Punta',
+  };
+
+  const categoryOrder = ['Top', 'Semi-Top', 'Terza Fascia', 'Quarta Fascia', 'Scommesse', 'Outsider', 'Titolare Scarso'];
+
+  const allRoles = ['Por', 'Ds', 'Dd', 'Dc', 'B', 'E', 'M', 'C', 'T', 'W', 'A', 'Pc'];
+  const teams = ['all', ...new Set(players.map(p => p.team))].sort();
+  const categories = ['all', ...categoryOrder];
+
+  const toggleRole = (role) => {
+    setSelectedRoles(prev => 
+      prev.includes(role) 
+        ? prev.filter(r => r !== role)
+        : [...prev, role]
+    );
+  };
+
+  const toggleTag = (tag) => {
+    setSelectedTags(prev => 
+      prev.includes(tag) 
+        ? prev.filter(t => t !== tag)
+        : [...prev, tag]
+    );
+  };
+
+  const clearRoles = () => {
+    setSelectedRoles([]);
+  };
+
+  const clearTags = () => {
+    setSelectedTags([]);
+  };
+
+  const getBallottaggio = (player) => {
+    const teamLineup = lineups[player.team];
+    if (!teamLineup || !teamLineup.possible || !teamLineup.possible.includes(player.id)) {
+      return null;
+    }
+    
+    const allPossible = teamLineup.possible;
+    const playerData = players.find(p => p.id === player.id);
+    if (!playerData) return null;
+    
+    const sameRolePlayers = allPossible.filter(pid => {
+      const p = players.find(pp => pp.id === pid);
+      return p && p.roles.some(r => playerData.roles.includes(r));
+    });
+    
+    if (sameRolePlayers.length > 1) {
+      const otherPlayer = sameRolePlayers.find(pid => pid !== player.id);
+      if (otherPlayer) {
+        const otherData = players.find(p => p.id === otherPlayer);
+        return otherData ? otherData.name : null;
       }
-      
-      setGoals([]);
-      setError(null);
-      setShowDeleteAll(false);
-      
-      await fetchGoals();
-      
-      alert('Tutti gli obiettivi sono stati eliminati!');
-      
-    } catch (err) {
-      console.error('Error deleting all goals:', err);
-      setError('Errore nell\'eliminazione di tutti gli obiettivi');
-      alert('Errore nell\'eliminazione: ' + err.message);
-    } finally {
-      setLoading(false);
+    }
+    
+    return null;
+  };
+
+  const getLinkedPlayer = (player) => {
+    if (!player.linkedWith) return null;
+    const linked = players.find(p => p.id === player.linkedWith);
+    return linked ? linked.name : null;
+  };
+
+  const isStarter = (player) => {
+    const teamLineup = lineups[player.team];
+    if (!teamLineup) return false;
+    return teamLineup.starters.includes(player.id);
+  };
+
+  const isPossibleStarter = (player) => {
+    const teamLineup = lineups[player.team];
+    if (!teamLineup) return false;
+    return teamLineup.possible.includes(player.id);
+  };
+
+  const getStatColor = (value) => {
+    if (value === undefined || value === null || value === 0) return '#666666';
+    if (value >= 4) return '#00ff00';
+    if (value === 3) return '#ff9900';
+    return '#ff4444';
+  };
+
+  const filteredPlayers = players.filter(player => {
+    const matchesSearch = player.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                         player.team.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesRole = selectedRoles.length === 0 || 
+      selectedRoles.every(role => player.roles && player.roles.includes(role));
+    
+    const matchesTeam = selectedTeam === 'all' || player.team === selectedTeam;
+    const matchesCategory = selectedCategory === 'all' || player.category === selectedCategory;
+    
+    const matchesTags = selectedTags.length === 0 || 
+      selectedTags.every(tag => player.tags && player.tags.includes(tag));
+    
+    const matchesMinPrice = minPrice === '' || player.price >= parseInt(minPrice);
+    const matchesMaxPrice = maxPrice === '' || player.price <= parseInt(maxPrice);
+    const matchesMinTitol = minTitol === '' || player.titol >= parseInt(minTitol);
+    const matchesMinAffid = minAffid === '' || player.affid >= parseInt(minAffid);
+    const matchesMinIntegr = minIntegr === '' || player.integr >= parseInt(minIntegr);
+    
+    return matchesSearch && matchesRole && matchesTeam && matchesCategory && matchesTags &&
+           matchesMinPrice && matchesMaxPrice && matchesMinTitol && matchesMinAffid && matchesMinIntegr;
+  });
+
+  const groupedPlayers = () => {
+    const grouped = {};
+    categoryOrder.forEach(cat => {
+      const playersInCat = filteredPlayers.filter(p => p.category === cat);
+      if (playersInCat.length > 0) {
+        grouped[cat] = playersInCat;
+      }
+    });
+    return grouped;
+  };
+
+  const toggleCalled = (playerId) => {
+    setCalledPlayers(prev => 
+      prev.includes(playerId) ? prev.filter(id => id !== playerId) : [...prev, playerId]
+    );
+  };
+
+  const startBuying = (player) => {
+    setBuyingPlayer(player.id);
+    setBuyPrice(player.price.toString());
+  };
+
+  const confirmBuy = () => {
+    if (buyingPlayer && buyPrice !== '') {
+      const player = players.find(p => p.id === buyingPlayer);
+      if (player) {
+        addToTeam(player, parseInt(buyPrice) || 0);
+      }
+      setBuyingPlayer(null);
+      setBuyPrice('');
     }
   };
 
-  const toggleTodayCheck = async (goalId, checked) => {
-    try {
-      const response = await fetch('/api/daily-check', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ goalId, checked }),
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to update check');
-      }
-      
-      const updatedGoal = await response.json();
-      
-      setGoals(prevGoals => 
-        prevGoals.map(goal => {
-          const goalIdToCheck = goal.id || goal._id;
-          return goalIdToCheck === goalId ? updatedGoal : goal;
-        })
-      );
-      setError(null);
-      
-      await fetchGoals();
-      
-    } catch (err) {
-      console.error('Error updating check:', err);
-      setError('Errore nell\'aggiornamento del check');
-      alert('Errore nell\'aggiornamento del check: ' + err.message);
-    }
+  const cancelBuy = () => {
+    setBuyingPlayer(null);
+    setBuyPrice('');
   };
 
-  const toggleDateCheck = async (goalId, date, checked) => {
-    try {
-      const dateString = date.toDateString();
-      
-      const response = await fetch('/api/daily-check', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          goalId, 
-          checked,
-          date: dateString
-        }),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to update check');
-      }
-      
-      const updatedGoal = await response.json();
-      
-      setGoals(prevGoals => 
-        prevGoals.map(goal => {
-          const goalIdToCheck = goal.id || goal._id;
-          return goalIdToCheck === goalId ? updatedGoal : goal;
-        })
-      );
-      
-      await fetchGoals();
-      
-    } catch (err) {
-      console.error('Error updating date check:', err);
-      alert('Errore nell\'aggiornamento del check');
+  const addToTeam = (player, price) => {
+    if (myTeam.find(p => p.id === player.id)) {
+      alert('Giocatore gia in squadra!');
+      return;
     }
+    setMyTeam([...myTeam, { ...player, paidPrice: price }]);
+  };
+
+  const removeFromTeam = (playerId) => {
+    setMyTeam(myTeam.filter(p => p.id !== playerId));
+  };
+
+  const getRoleCount = (role) => {
+    return myTeam.filter(p => p.roles && p.roles.includes(role)).length;
+  };
+
+  const getTotalSpent = () => {
+    return myTeam.reduce((sum, p) => sum + p.paidPrice, 0);
+  };
+
+  const getRemainingBudget = () => {
+    return budget - getTotalSpent();
   };
 
   const styles = {
     container: {
+      width: '100%',
       maxWidth: '1200px',
       margin: '0 auto',
-      padding: isMobile ? '5px' : '20px',
+      padding: isMobile ? '10px' : '20px',
       fontFamily: "'Courier New', monospace",
-      minHeight: '100vh',
-      width: '100%',
-      overflowX: 'hidden',
       boxSizing: 'border-box',
     },
     header: {
-      textAlign: 'center',
-      marginBottom: isMobile ? '15px' : '20px',
-      padding: isMobile ? '10px' : '20px',
-      borderBottom: '1px solid #00ff00',
-      position: 'relative',
-    },
-    title: {
-      fontSize: isMobile ? '1.5em' : '2.5em',
-      marginBottom: '10px',
       color: '#00ff00',
-      letterSpacing: '3px',
-      fontWeight: 'normal',
-    },
-    subtitle: {
-      fontSize: '0.9em',
-      opacity: '0.7',
-      color: '#00ff00',
-      letterSpacing: '1px',
-    },
-    timestamp: {
-      position: isMobile ? 'static' : 'absolute',
-      top: isMobile ? 'auto' : '10px',
-      right: isMobile ? 'auto' : '20px',
-      fontSize: '0.7em',
-      color: '#00ff00',
-      opacity: '0.6',
-      marginTop: isMobile ? '5px' : '0',
-    },
-    mainMenu: {
-      display: 'flex',
-      justifyContent: 'center',
-      gap: '15px',
-      marginBottom: '30px',
-      flexWrap: 'wrap',
-    },
-    menuCard: {
-      padding: isMobile ? '20px' : '30px',
-      border: '1px solid #00ff00',
-      borderRadius: '4px',
-      cursor: 'pointer',
-      transition: 'all 0.3s',
-      textAlign: 'center',
-      minWidth: isMobile ? '100%' : '200px',
-      backgroundColor: 'rgba(0, 255, 0, 0.02)',
-    },
-    menuCardTitle: {
-      fontSize: '1.1em',
-      color: '#00ff00',
-      marginBottom: '10px',
+      fontSize: isMobile ? '1.2em' : '1.5em',
+      marginBottom: '20px',
       letterSpacing: '2px',
-    },
-    menuCardDescription: {
-      fontSize: '0.8em',
-      color: '#00cc00',
-      opacity: '0.7',
-    },
-    toolbar: {
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      gap: isMobile ? '5px' : '10px',
-      marginBottom: '20px',
-      flexWrap: 'nowrap',
-      padding: isMobile ? '8px' : '15px',
-      backgroundColor: 'rgba(0, 255, 0, 0.02)',
-      borderRadius: '4px',
-      border: '1px solid rgba(0, 255, 0, 0.2)',
-      width: '100%',
-      boxSizing: 'border-box',
-    },
-    button: {
-      padding: isMobile ? '10px 12px' : '10px 20px',
-      fontSize: isMobile ? '9px' : '12px',
-      border: '1px solid #00ff00',
-      borderRadius: '4px',
-      cursor: 'pointer',
-      backgroundColor: 'transparent',
-      color: '#00ff00',
-      letterSpacing: '1px',
-      fontFamily: "'Courier New', monospace",
-      transition: 'all 0.3s',
-      textTransform: 'uppercase',
-      minHeight: isMobile ? '40px' : 'auto',
-      flex: isMobile ? '1' : '0 0 auto',
-      whiteSpace: 'nowrap',
-      fontWeight: 'bold',
-    },
-    dropdownContainer: {
-      position: 'relative',
-      display: 'inline-block',
-      flex: isMobile ? '1' : '0 0 auto',
-    },
-    dropdownMenu: {
-      position: 'absolute',
-      top: '100%',
-      left: '50%',
-      transform: 'translateX(-50%)',
-      backgroundColor: '#0a0a0a',
-      border: '1px solid #00ff00',
-      borderRadius: '4px',
-      marginTop: '5px',
-      zIndex: 1000,
-      minWidth: isMobile ? '120px' : '200px',
-      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.5)',
-      overflow: 'hidden',
-    },
-    dropdownItem: {
-      padding: isMobile ? '12px 15px' : '12px 20px',
-      cursor: 'pointer',
-      transition: 'all 0.3s',
-      color: '#00ff00',
-      fontSize: isMobile ? '10px' : '12px',
-      letterSpacing: isMobile ? '0.5px' : '1px',
-      borderBottom: '1px solid rgba(0, 255, 0, 0.1)',
-      whiteSpace: 'nowrap',
-      display: 'block',
-      width: '100%',
-      textAlign: 'left',
-      backgroundColor: 'transparent',
-      fontFamily: "'Courier New', monospace",
-      textTransform: 'uppercase',
-    },
-    errorMessage: {
-      backgroundColor: 'rgba(255, 0, 0, 0.1)',
-      color: '#ff4444',
-      padding: '15px',
-      borderRadius: '4px',
-      marginBottom: '20px',
       textAlign: 'center',
-      border: '1px solid #ff4444',
-      fontSize: '12px',
-    },
-    loadingMessage: {
-      textAlign: 'center',
-      color: '#00ff00',
-      fontSize: '16px',
-      padding: '40px',
-      border: '1px solid #00ff00',
-      backgroundColor: 'rgba(0, 255, 0, 0.03)',
-    },
-    syncStatus: {
-      textAlign: 'center',
-      color: '#00ff00',
-      fontSize: '10px',
-      marginTop: '20px',
-      opacity: '0.6',
-      letterSpacing: '1px',
-    },
-    dangerZone: {
-      backgroundColor: 'rgba(255, 0, 0, 0.05)',
-      padding: '15px',
-      borderRadius: '4px',
-      marginBottom: '20px',
-      border: '1px solid #ff4444',
-    },
-    dangerTitle: {
-      color: '#ff4444',
-      marginBottom: '10px',
-      textAlign: 'center',
-      letterSpacing: '1px',
-      fontSize: '14px',
     },
     backButton: {
-      marginBottom: isMobile ? '10px' : '15px',
+      marginBottom: '15px',
       padding: isMobile ? '6px 12px' : '8px 16px',
       backgroundColor: 'transparent',
       color: '#00ff00',
@@ -431,252 +333,1200 @@ function App() {
       fontSize: isMobile ? '10px' : '11px',
       letterSpacing: '1px',
     },
-    sectionTitle: {
-      color: '#00ff00',
-      fontSize: isMobile ? '1.2em' : '1.5em',
+    toolbar: {
+      display: 'flex',
+      justifyContent: 'center',
+      gap: '10px',
       marginBottom: '20px',
+      flexWrap: 'wrap',
+      padding: '15px',
+      backgroundColor: 'rgba(0, 255, 0, 0.02)',
+      borderRadius: '4px',
+      border: '1px solid rgba(0, 255, 0, 0.2)',
+    },
+    button: {
+      padding: '10px 20px',
+      fontSize: '12px',
+      border: '1px solid #00ff00',
+      borderRadius: '4px',
+      cursor: 'pointer',
+      backgroundColor: 'transparent',
+      color: '#00ff00',
+      letterSpacing: '1px',
+      fontFamily: "'Courier New', monospace",
+      transition: 'all 0.3s',
+      textTransform: 'uppercase',
+    },
+    buttonActive: {
+      padding: '10px 20px',
+      fontSize: '12px',
+      border: '1px solid #00ff00',
+      borderRadius: '4px',
+      cursor: 'pointer',
+      backgroundColor: 'rgba(0, 255, 0, 0.1)',
+      color: '#00ff00',
+      letterSpacing: '1px',
+      fontFamily: "'Courier New', monospace",
+      transition: 'all 0.3s',
+      textTransform: 'uppercase',
+      fontWeight: 'bold',
+      boxShadow: '0 0 10px rgba(0, 255, 0, 0.3)',
+    },
+    searchInput: {
+      width: '100%',
+      padding: '10px',
+      marginBottom: '10px',
+      border: '1px solid #ff9900',
+      borderRadius: '4px',
+      fontSize: '14px',
+      outline: 'none',
+      backgroundColor: 'transparent',
+      color: '#ff9900',
+      fontFamily: "'Courier New', monospace",
+      boxSizing: 'border-box',
+    },
+    select: {
+      width: '100%',
+      padding: '10px',
+      marginBottom: '10px',
+      border: '1px solid #00ff00',
+      borderRadius: '4px',
+      fontSize: '14px',
+      outline: 'none',
+      backgroundColor: '#0a0a0a',
+      color: '#00ff00',
+      fontFamily: "'Courier New', monospace",
+      boxSizing: 'border-box',
+    },
+    filterRow: {
+      display: 'grid',
+      gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr',
+      gap: '10px',
+      marginBottom: '10px',
+    },
+    roleSelectorContainer: {
+      marginBottom: '10px',
+    },
+    roleSelectorButton: {
+      width: '100%',
+      padding: '10px',
+      backgroundColor: 'transparent',
+      color: '#00ff00',
+      border: '1px solid #00ff00',
+      borderRadius: '4px',
+      fontSize: '12px',
+      cursor: 'pointer',
+      fontFamily: "'Courier New', monospace",
+      letterSpacing: '1px',
+      textTransform: 'uppercase',
+      textAlign: 'left',
+    },
+    roleSelectorDropdown: {
+      backgroundColor: '#0a0a0a',
+      border: '1px solid #00ff00',
+      borderRadius: '4px',
+      padding: '10px',
+      marginTop: '5px',
+      display: 'flex',
+      flexWrap: 'wrap',
+      gap: '8px',
+    },
+    roleCheckbox: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '5px',
+      cursor: 'pointer',
+      padding: '5px 10px',
+      border: '1px solid rgba(0, 255, 0, 0.3)',
+      borderRadius: '4px',
+      transition: 'all 0.3s',
+    },
+    roleCheckboxSelected: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '5px',
+      cursor: 'pointer',
+      padding: '5px 10px',
+      border: '1px solid #00ff00',
+      borderRadius: '4px',
+      backgroundColor: 'rgba(0, 255, 0, 0.1)',
+      transition: 'all 0.3s',
+    },
+    checkbox: {
+      accentColor: '#00ff00',
+      cursor: 'pointer',
+    },
+    roleLabel: {
+      color: '#00ff00',
+      fontSize: '11px',
+      letterSpacing: '0.5px',
+    },
+    clearRolesButton: {
+      padding: '5px 10px',
+      backgroundColor: 'transparent',
+      color: '#ff4444',
+      border: '1px solid #ff4444',
+      borderRadius: '4px',
+      fontSize: '10px',
+      cursor: 'pointer',
+      fontFamily: "'Courier New', monospace",
+      letterSpacing: '1px',
+      marginLeft: 'auto',
+    },
+    selectedRolesInfo: {
+      color: '#ff9900',
+      fontSize: '11px',
+      letterSpacing: '0.5px',
+      marginTop: '5px',
+    },
+  };
+      tagSelectorContainer: {
+      marginBottom: '10px',
+    },
+    tagSelectorButton: {
+      width: '100%',
+      padding: '10px',
+      backgroundColor: 'transparent',
+      color: '#ff9900',
+      border: '1px solid #ff9900',
+      borderRadius: '4px',
+      fontSize: '12px',
+      cursor: 'pointer',
+      fontFamily: "'Courier New', monospace",
+      letterSpacing: '1px',
+      textTransform: 'uppercase',
+      textAlign: 'left',
+    },
+    tagSelectorDropdown: {
+      backgroundColor: '#0a0a0a',
+      border: '1px solid #ff9900',
+      borderRadius: '4px',
+      padding: '10px',
+      marginTop: '5px',
+      display: 'flex',
+      flexWrap: 'wrap',
+      gap: '8px',
+    },
+    tagCheckbox: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '5px',
+      cursor: 'pointer',
+      padding: '5px 10px',
+      border: '1px solid rgba(255, 153, 0, 0.3)',
+      borderRadius: '4px',
+      transition: 'all 0.3s',
+    },
+    tagCheckboxSelected: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '5px',
+      cursor: 'pointer',
+      padding: '5px 10px',
+      border: '1px solid #ff9900',
+      borderRadius: '4px',
+      backgroundColor: 'rgba(255, 153, 0, 0.1)',
+      transition: 'all 0.3s',
+    },
+    tagLabel: {
+      color: '#ff9900',
+      fontSize: '10px',
+      letterSpacing: '0.5px',
+    },
+    clearTagsButton: {
+      padding: '5px 10px',
+      backgroundColor: 'transparent',
+      color: '#ff4444',
+      border: '1px solid #ff4444',
+      borderRadius: '4px',
+      fontSize: '10px',
+      cursor: 'pointer',
+      fontFamily: "'Courier New', monospace",
+      letterSpacing: '1px',
+      marginLeft: 'auto',
+    },
+    statsToggleButton: {
+      width: '100%',
+      padding: '8px',
+      backgroundColor: 'transparent',
+      color: '#00ccff',
+      border: '1px solid #00ccff',
+      borderRadius: '4px',
+      fontSize: '11px',
+      cursor: 'pointer',
+      fontFamily: "'Courier New', monospace",
+      letterSpacing: '1px',
+      marginBottom: '10px',
+      textTransform: 'uppercase',
+    },
+    advancedFiltersRow: {
+      display: 'grid',
+      gridTemplateColumns: isMobile ? '1fr 1fr' : '1fr 1fr 1fr 1fr 1fr 1fr',
+      gap: '10px',
+      marginBottom: '10px',
+    },
+    advancedInput: {
+      width: '100%',
+      padding: '8px',
+      marginBottom: '10px',
+      border: '1px solid #ff9900',
+      borderRadius: '4px',
+      fontSize: '12px',
+      outline: 'none',
+      backgroundColor: 'transparent',
+      color: '#ff9900',
+      fontFamily: "'Courier New', monospace",
+      boxSizing: 'border-box',
+    },
+    advancedLabel: {
+      color: '#ff9900',
+      fontSize: '10px',
+      letterSpacing: '1px',
+      marginBottom: '5px',
+      display: 'block',
+    },
+    categoryHeader: {
+      color: '#ff9900',
+      fontSize: '16px',
+      fontWeight: 'bold',
+      marginTop: '20px',
+      marginBottom: '10px',
       letterSpacing: '2px',
+      borderBottom: '1px solid #ff9900',
+      paddingBottom: '5px',
+      textTransform: 'uppercase',
+    },
+    playerCard: {
+      backgroundColor: 'rgba(0, 255, 0, 0.02)',
+      border: '1px solid rgba(0, 255, 0, 0.3)',
+      borderRadius: '4px',
+      padding: '12px',
+      marginBottom: '8px',
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      flexWrap: 'wrap',
+      gap: '10px',
+    },
+    playerName: {
+      color: '#00ff00',
+      fontSize: '15px',
+      fontWeight: 'bold',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+      flexWrap: 'wrap',
+    },
+    playerInfo: {
+      color: '#00cc00',
+      fontSize: '12px',
+    },
+    priceBadge: {
+      color: '#ff9900',
+      fontSize: '15px',
+      fontWeight: 'bold',
+      letterSpacing: '1px',
+      whiteSpace: 'nowrap',
+    },
+    statValue: {
+      fontSize: '13px',
+      fontWeight: 'bold',
+      letterSpacing: '0.5px',
+      padding: '2px 6px',
+      borderRadius: '3px',
+    },
+    calledBadge: {
+      color: '#ff4444',
+      fontSize: '10px',
+      fontWeight: 'bold',
+    },
+    statusDot: {
+      width: '10px',
+      height: '10px',
+      borderRadius: '50%',
+      display: 'inline-block',
+      flexShrink: 0,
+      cursor: 'pointer',
+    },
+    roleBadge: {
+      display: 'inline-block',
+      padding: '2px 6px',
+      borderRadius: '8px',
+      fontSize: '9px',
+      fontWeight: 'bold',
+      letterSpacing: '0.5px',
+      marginRight: '3px',
+    },
+    tagBadge: {
+      display: 'inline-block',
+      padding: '2px 6px',
+      borderRadius: '8px',
+      fontSize: '8px',
+      letterSpacing: '0.3px',
+      marginRight: '3px',
+      backgroundColor: 'rgba(255, 153, 0, 0.15)',
+      color: '#ff9900',
+      border: '1px solid rgba(255, 153, 0, 0.4)',
+    },
+    linkedBadge: {
+      display: 'inline-block',
+      padding: '2px 6px',
+      borderRadius: '8px',
+      fontSize: '8px',
+      letterSpacing: '0.3px',
+      marginRight: '3px',
+      backgroundColor: 'rgba(0, 204, 255, 0.15)',
+      color: '#00ccff',
+      border: '1px solid rgba(0, 204, 255, 0.4)',
+    },
+    ballottaggioInfo: {
+      color: '#ff9900',
+      fontSize: '11px',
+      letterSpacing: '0.5px',
+      marginTop: '3px',
+    },
+    teamCard: {
+      backgroundColor: 'rgba(0, 255, 0, 0.02)',
+      border: '1px solid rgba(0, 255, 0, 0.3)',
+      borderRadius: '4px',
+      padding: '12px',
+      marginBottom: '8px',
+    },
+    statsPanel: {
+      backgroundColor: 'rgba(0, 204, 255, 0.05)',
+      border: '1px solid rgba(0, 204, 255, 0.3)',
+      borderRadius: '4px',
+      padding: '15px',
+      marginBottom: '20px',
+    },
+    statsPanelPlayer: {
+      backgroundColor: 'rgba(0, 204, 255, 0.03)',
+      border: '1px solid rgba(0, 204, 255, 0.2)',
+      borderRadius: '4px',
+      padding: '10px',
+      marginTop: '8px',
+      width: '100%',
+    },
+    statsRow: {
+      display: 'flex',
+      gap: '15px',
+      flexWrap: 'wrap',
+      color: '#00ccff',
+      fontSize: '11px',
+    },
+    statText: {
+      color: '#00ccff',
+      fontSize: '12px',
+      marginBottom: '5px',
+    },
+    toggleFiltersButton: {
+      width: '100%',
+      padding: '8px',
+      backgroundColor: 'transparent',
+      color: '#ff9900',
+      border: '1px solid #ff9900',
+      borderRadius: '4px',
+      fontSize: '11px',
+      cursor: 'pointer',
+      fontFamily: "'Courier New', monospace",
+      letterSpacing: '1px',
+      marginBottom: '10px',
+      textTransform: 'uppercase',
+    },
+    buyPanel: {
+      backgroundColor: 'rgba(0, 204, 255, 0.05)',
+      border: '1px solid #00ccff',
+      borderRadius: '4px',
+      padding: '10px',
+      marginTop: '8px',
+      display: 'flex',
+      gap: '8px',
+      alignItems: 'center',
+      flexWrap: 'wrap',
+      width: '100%',
+    },
+    buyInput: {
+      width: '80px',
+      padding: '8px',
+      border: '1px solid #00ccff',
+      borderRadius: '4px',
+      fontSize: '14px',
+      outline: 'none',
+      backgroundColor: 'transparent',
+      color: '#00ccff',
+      fontFamily: "'Courier New', monospace",
       textAlign: 'center',
+      boxSizing: 'border-box',
+    },
+    buyButton: {
+      padding: '8px 15px',
+      backgroundColor: 'transparent',
+      color: '#00ccff',
+      border: '1px solid #00ccff',
+      borderRadius: '4px',
+      fontSize: '11px',
+      cursor: 'pointer',
+      fontFamily: "'Courier New', monospace",
+      letterSpacing: '1px',
+      transition: 'all 0.3s',
+      fontWeight: 'bold',
+    },
+    cancelBuyButton: {
+      padding: '8px 15px',
+      backgroundColor: 'transparent',
+      color: '#ff4444',
+      border: '1px solid #ff4444',
+      borderRadius: '4px',
+      fontSize: '11px',
+      cursor: 'pointer',
+      fontFamily: "'Courier New', monospace",
+      letterSpacing: '1px',
+      transition: 'all 0.3s',
+    },
+    auctionModal: {
+      position: 'fixed',
+      top: '50%',
+      left: '50%',
+      transform: 'translate(-50%, -50%)',
+      backgroundColor: '#0a0a0a',
+      border: '1px solid #ff9900',
+      borderRadius: '8px',
+      padding: '20px',
+      zIndex: 100,
+      minWidth: '300px',
+      boxShadow: '0 0 30px rgba(255, 153, 0, 0.3)',
+    },
+    auctionModalTitle: {
+      color: '#ff9900',
+      fontSize: '16px',
+      fontWeight: 'bold',
+      marginBottom: '15px',
+      textAlign: 'center',
+    },
+    auctionInput: {
+      width: '100%',
+      padding: '10px',
+      marginBottom: '15px',
+      border: '1px solid #ff9900',
+      borderRadius: '4px',
+      fontSize: '14px',
+      outline: 'none',
+      backgroundColor: 'transparent',
+      color: '#ff9900',
+      fontFamily: "'Courier New', monospace",
+      boxSizing: 'border-box',
+    },
+    auctionList: {
+      position: 'fixed',
+      top: '50%',
+      left: '50%',
+      transform: 'translate(-50%, -50%)',
+      backgroundColor: '#0a0a0a',
+      border: '1px solid #ff9900',
+      borderRadius: '8px',
+      padding: '20px',
+      zIndex: 100,
+      minWidth: '350px',
+      maxHeight: '70vh',
+      overflowY: 'auto',
+      boxShadow: '0 0 30px rgba(255, 153, 0, 0.3)',
+    },
+    auctionListItem: {
+      backgroundColor: 'rgba(255, 153, 0, 0.05)',
+      border: '1px solid rgba(255, 153, 0, 0.3)',
+      borderRadius: '4px',
+      padding: '10px',
+      marginBottom: '8px',
+      cursor: 'pointer',
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      transition: 'all 0.3s',
+    },
+    auctionListName: {
+      color: '#ff9900',
+      fontSize: '14px',
+      fontWeight: 'bold',
+    },
+    auctionListInfo: {
+      color: '#ff9900',
+      fontSize: '11px',
+      opacity: '0.7',
+    },
+    overlay: {
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0, 0, 0, 0.7)',
+      zIndex: 99,
     },
   };
 
-  if (loading && goals.length === 0) {
+  const renderRoleBadges = (player) => {
+    if (!player.roles || player.roles.length === 0) return null;
+    return player.roles.map(role => (
+      <span
+        key={role}
+        style={{
+          ...styles.roleBadge,
+          backgroundColor: `${roleColors[role]}22`,
+          color: roleColors[role],
+          border: `1px solid ${roleColors[role]}`,
+        }}
+        title={roleNames[role] || role}
+      >
+        {role}
+      </span>
+    ));
+  };
+
+  const renderTagBadges = (player) => {
+    if (!player.tags || player.tags.length === 0) return null;
+    return player.tags.slice(0, 3).map(tag => (
+      <span key={tag} style={styles.tagBadge}>{tag}</span>
+    ));
+  };
+
+  const renderLinkedBadge = (player) => {
+    const linkedName = getLinkedPlayer(player);
+    if (!linkedName) return null;
     return (
-      <div style={styles.container}>
-        <div style={styles.header}>
-          <h1 style={styles.title}>Organizer</h1>
+      <span style={styles.linkedBadge} title={`Da prendere con ${linkedName}`}>
+        🔗 {linkedName}
+      </span>
+    );
+  };
+
+  const renderStatValue = (label, value) => {
+    const color = getStatColor(value);
+    return (
+      <span
+        style={{
+          ...styles.statValue,
+          color: color,
+          backgroundColor: `${color}22`,
+          border: `1px solid ${color}`,
+        }}
+        title={label + ': ' + value + '/5'}
+      >
+        {value}
+      </span>
+    );
+  };
+    const renderPlayerCard = (player, isAstaMode = false) => {
+    const isCalled = calledPlayers.includes(player.id);
+    const isInTeam = myTeam.find(p => p.id === player.id);
+    const starter = isStarter(player);
+    const possibleStarter = isPossibleStarter(player);
+    const ballottaggio = getBallottaggio(player);
+    const isExpanded = expandedBallottaggio === player.id;
+    const isBuying = buyingPlayer === player.id;
+    const isStatsExpanded = expandedPlayer === player.id;
+    
+    return (
+      <div key={player.id} style={{
+        ...styles.playerCard,
+        opacity: isAstaMode && isCalled ? 0.5 : 1,
+        backgroundColor: isAstaMode && isInTeam ? 'rgba(0, 255, 0, 0.1)' : 'rgba(0, 255, 0, 0.02)',
+      }}>
+        <div style={{flex: 1, minWidth: '200px'}}>
+          <div style={styles.playerName}>
+            {starter && <span style={{...styles.statusDot, backgroundColor: '#00ff00', boxShadow: '0 0 5px #00ff00'}} />}
+            {possibleStarter && <span 
+              style={{...styles.statusDot, backgroundColor: '#ff9900', boxShadow: '0 0 5px #ff9900', cursor: 'pointer'}}
+              onClick={(e) => {
+                e.stopPropagation();
+                setExpandedBallottaggio(isExpanded ? null : player.id);
+              }}
+              title="Clicca per vedere il ballottaggio"
+            />}
+            {!starter && !possibleStarter && <span style={{...styles.statusDot, backgroundColor: '#666'}} />}
+            {player.name}
+            {renderRoleBadges(player)}
+            {renderLinkedBadge(player)}
+            {renderTagBadges(player)}
+            {isAstaMode && isCalled && <span style={styles.calledBadge}> [CHIAMATO]</span>}
+            {isAstaMode && isInTeam && <span style={{color: '#00ff00'}}> [IN SQUADRA]</span>}
+          </div>
+          <div style={styles.playerInfo}>
+            {player.team}
+          </div>
+          {isExpanded && ballottaggio && (
+            <div style={styles.ballottaggioInfo}>
+              Ballottaggio: {ballottaggio}
+            </div>
+          )}
         </div>
-        <div style={styles.loadingMessage}>
-          <h2>Initializing...</h2>
-          <p>Connecting to database...</p>
+        
+        <div style={{display: 'flex', alignItems: 'center', gap: '15px'}}>
+          <div style={styles.priceBadge}>
+            {player.price} crediti
+          </div>
+          <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
+            <span style={{color: '#666', fontSize: '10px'}}>Tit:</span>
+            {renderStatValue('Titolarita', player.titol)}
+            <span style={{color: '#666', fontSize: '10px'}}>Aff:</span>
+            {renderStatValue('Affidabilita', player.affid)}
+            <span style={{color: '#666', fontSize: '10px'}}>Int:</span>
+            {renderStatValue('Integrita', player.integr)}
+          </div>
+          {showStats && (
+            <button 
+              style={{...styles.button, padding: '3px 8px', fontSize: '9px'}}
+              onClick={() => setExpandedPlayer(isStatsExpanded ? null : player.id)}
+            >
+              {isStatsExpanded ? '[-]' : '[+]'}
+            </button>
+          )}
         </div>
+        
+        {isStatsExpanded && (
+          <div style={styles.statsPanelPlayer}>
+            <div style={styles.statsRow}>
+              {player.mv !== undefined && <span>MV: {player.mv}</span>}
+              {player.fmv !== undefined && <span>FMV: {player.fmv}</span>}
+              {player.fmvExp !== undefined && <span>FMV Exp: {player.fmvExp}</span>}
+              {player.gol !== undefined && <span>Gol: {player.gol}</span>}
+              {player.ass !== undefined && <span>Assist: {player.ass}</span>}
+              {player.amm !== undefined && <span>Amm: {player.amm}</span>}
+              {player.golSubiti !== undefined && <span>Gol Subiti: {player.golSubiti}</span>}
+              {player.rigParati !== undefined && <span>Rig Parati: {player.rigParati}</span>}
+            </div>
+          </div>
+        )}
+        
+        {isAstaMode && (
+          <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
+            <button
+              onClick={() => toggleCalled(player.id)}
+              style={{
+                ...styles.button,
+                padding: '5px 10px',
+                fontSize: '10px',
+                borderColor: isCalled ? '#ff4444' : '#ff9900',
+                color: isCalled ? '#ff4444' : '#ff9900',
+              }}
+            >
+              {isCalled ? 'ANNULLA' : 'CHIAMATO'}
+            </button>
+            {!isInTeam && !isBuying && (
+              <button
+                onClick={() => startBuying(player)}
+                style={{
+                  ...styles.button,
+                  padding: '5px 10px',
+                  fontSize: '10px',
+                  borderColor: '#00ccff',
+                  color: '#00ccff',
+                }}
+              >
+                +
+              </button>
+            )}
+          </div>
+        )}
+        
+        {isBuying && (
+          <div style={styles.buyPanel}>
+            <input
+              type="number"
+              value={buyPrice}
+              onChange={(e) => setBuyPrice(e.target.value)}
+              style={styles.buyInput}
+              min="0"
+              autoFocus
+            />
+            <span style={{color: '#00ccff', fontSize: '11px'}}>crediti</span>
+            <button
+              onClick={confirmBuy}
+              style={styles.buyButton}
+            >
+              [ CONFERMA ]
+            </button>
+            <button
+              onClick={cancelBuy}
+              style={styles.cancelBuyButton}
+            >
+              [ ANNULLA ]
+            </button>
+          </div>
+        )}
       </div>
     );
-  }
+  };
 
-  if (currentSection === 'home') {
-    return (
-      <div style={styles.container}>
-        <div style={styles.header}>
-          <h1 style={styles.title}>Organizer</h1>
-          <p style={styles.subtitle}>// Personal Task Management System</p>
-          <div style={styles.timestamp}>
-            {currentTime.toLocaleString('it-IT')}
+  const renderRoleSelector = () => (
+    <div style={styles.roleSelectorContainer}>
+      <button 
+        style={styles.roleSelectorButton}
+        onClick={() => setShowRoleSelector(!showRoleSelector)}
+      >
+        [ RUOLI {selectedRoles.length > 0 ? `(${selectedRoles.length})` : ''} ▼ ]
+      </button>
+      
+      {showRoleSelector && (
+        <div style={styles.roleSelectorDropdown}>
+          {allRoles.map(role => (
+            <div
+              key={role}
+              style={selectedRoles.includes(role) ? styles.roleCheckboxSelected : styles.roleCheckbox}
+              onClick={() => toggleRole(role)}
+            >
+              <input
+                type="checkbox"
+                checked={selectedRoles.includes(role)}
+                onChange={() => toggleRole(role)}
+                style={styles.checkbox}
+                onClick={(e) => e.stopPropagation()}
+              />
+              <span style={{...styles.roleLabel, color: roleColors[role]}}>
+                {role} - {roleNames[role]}
+              </span>
+            </div>
+          ))}
+          {selectedRoles.length > 0 && (
+            <button
+              style={styles.clearRolesButton}
+              onClick={(e) => {
+                e.stopPropagation();
+                clearRoles();
+              }}
+            >
+              [ CLEAR ]
+            </button>
+          )}
+        </div>
+      )}
+      
+      {selectedRoles.length > 0 && (
+        <div style={styles.selectedRolesInfo}>
+          Filtro: {selectedRoles.join(' + ')} (deve avere TUTTI questi ruoli)
+        </div>
+      )}
+    </div>
+  );
+
+  const renderTagSelector = () => (
+    <div style={styles.tagSelectorContainer}>
+      <button 
+        style={styles.tagSelectorButton}
+        onClick={() => setShowTagSelector(!showTagSelector)}
+      >
+        [ TAG {selectedTags.length > 0 ? `(${selectedTags.length})` : ''} ▼ ]
+      </button>
+      {showTagSelector && (
+        <div style={styles.tagSelectorDropdown}>
+          {allTags.map(tag => (
+            <div
+              key={tag}
+              style={selectedTags.includes(tag) ? styles.tagCheckboxSelected : styles.tagCheckbox}
+              onClick={() => toggleTag(tag)}
+            >
+              <input
+                type="checkbox"
+                checked={selectedTags.includes(tag)}
+                onChange={() => toggleTag(tag)}
+                style={styles.checkbox}
+                onClick={(e) => e.stopPropagation()}
+              />
+              <span style={styles.tagLabel}>{tag}</span>
+            </div>
+          ))}
+          {selectedTags.length > 0 && (
+            <button
+              style={styles.clearTagsButton}
+              onClick={(e) => {
+                e.stopPropagation();
+                clearTags();
+              }}
+            >
+              [ CLEAR ]
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+
+  const renderFilters = () => (
+    <div>
+      <input
+        type="text"
+        placeholder="Cerca giocatore o squadra..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        style={styles.searchInput}
+      />
+      <div style={styles.filterRow}>
+        {renderRoleSelector()}
+        <select
+          value={selectedTeam}
+          onChange={(e) => setSelectedTeam(e.target.value)}
+          style={styles.select}
+        >
+          {teams.map(team => (
+            <option key={team} value={team}>
+              {team === 'all' ? 'Tutte le squadre' : team}
+            </option>
+          ))}
+        </select>
+        <select
+          value={selectedCategory}
+          onChange={(e) => setSelectedCategory(e.target.value)}
+          style={styles.select}
+        >
+          {categories.map(cat => (
+            <option key={cat} value={cat}>
+              {cat === 'all' ? 'Tutte le fasce' : cat}
+            </option>
+          ))}
+        </select>
+      </div>
+      
+      {renderTagSelector()}
+      
+      <button 
+        style={styles.statsToggleButton}
+        onClick={() => setShowStats(!showStats)}
+      >
+        {showStats ? '[ NASCONDI STATS AVANZATE ]' : '[ MOSTRA STATS AVANZATE ]'}
+      </button>
+      
+      <button 
+        style={styles.toggleFiltersButton}
+        onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+      >
+        {showAdvancedFilters ? '[ NASCONDI FILTRI AVANZATI ]' : '[ MOSTRA FILTRI AVANZATI ]'}
+      </button>
+      
+      {showAdvancedFilters && (
+        <div style={styles.advancedFiltersRow}>
+          <div>
+            <label style={styles.advancedLabel}>Crediti Min:</label>
+            <input
+              type="number"
+              placeholder="Min"
+              value={minPrice}
+              onChange={(e) => setMinPrice(e.target.value)}
+              style={styles.advancedInput}
+              min="0"
+            />
+          </div>
+          <div>
+            <label style={styles.advancedLabel}>Crediti Max:</label>
+            <input
+              type="number"
+              placeholder="Max"
+              value={maxPrice}
+              onChange={(e) => setMaxPrice(e.target.value)}
+              style={styles.advancedInput}
+              min="0"
+            />
+          </div>
+          <div>
+            <label style={styles.advancedLabel}>Tit Min:</label>
+            <input
+              type="number"
+              placeholder="1-5"
+              value={minTitol}
+              onChange={(e) => setMinTitol(e.target.value)}
+              style={styles.advancedInput}
+              min="1"
+              max="5"
+            />
+          </div>
+          <div>
+            <label style={styles.advancedLabel}>Aff Min:</label>
+            <input
+              type="number"
+              placeholder="1-5"
+              value={minAffid}
+              onChange={(e) => setMinAffid(e.target.value)}
+              style={styles.advancedInput}
+              min="1"
+              max="5"
+            />
+          </div>
+          <div>
+            <label style={styles.advancedLabel}>Int Min:</label>
+            <input
+              type="number"
+              placeholder="1-5"
+              value={minIntegr}
+              onChange={(e) => setMinIntegr(e.target.value)}
+              style={styles.advancedInput}
+              min="1"
+              max="5"
+            />
           </div>
         </div>
-
-        <div style={styles.mainMenu}>
-          <div 
-            style={styles.menuCard}
-            onClick={() => setCurrentSection('fantacalcio')}
-            onMouseEnter={(e) => {
-              e.target.style.backgroundColor = 'rgba(255, 153, 0, 0.1)';
-              e.target.style.boxShadow = '0 0 20px rgba(255, 153, 0, 0.2)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.backgroundColor = 'rgba(0, 255, 0, 0.02)';
-              e.target.style.boxShadow = 'none';
-            }}
+      )}
+    </div>
+  );
+    const renderAuctionModal = () => (
+    <>
+      <div style={styles.overlay} onClick={() => setShowAuctionModal(false)} />
+      <div style={styles.auctionModal}>
+        <h2 style={styles.auctionModalTitle}>[ NUOVA ASTA ]</h2>
+        <input
+          type="text"
+          placeholder="Nome asta..."
+          value={newAuctionName}
+          onChange={(e) => setNewAuctionName(e.target.value)}
+          style={styles.auctionInput}
+          autoFocus
+        />
+        <div style={{display: 'flex', gap: '10px', justifyContent: 'center'}}>
+          <button
+            onClick={createAuction}
+            style={{...styles.button, borderColor: '#ff9900', color: '#ff9900'}}
           >
-            <div style={styles.menuCardTitle}>[ FANTACALCIO ]</div>
-            <div style={styles.menuCardDescription}>
-              Gestisci la tua asta
-            </div>
-          </div>
-          
-          <div 
-            style={styles.menuCard}
-            onClick={() => setCurrentSection('goals')}
-            onMouseEnter={(e) => {
-              e.target.style.backgroundColor = 'rgba(0, 255, 0, 0.1)';
-              e.target.style.boxShadow = '0 0 20px rgba(0, 255, 0, 0.2)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.backgroundColor = 'rgba(0, 255, 0, 0.02)';
-              e.target.style.boxShadow = 'none';
-            }}
+            [ CREA ]
+          </button>
+          <button
+            onClick={() => setShowAuctionModal(false)}
+            style={{...styles.button, borderColor: '#666', color: '#666'}}
           >
-            <div style={styles.menuCardTitle}>[ OBJECTIVES ]</div>
-            <div style={styles.menuCardDescription}>
-              Track your daily goals
-            </div>
-          </div>
-          
-          <div 
-            style={styles.menuCard}
-            onClick={() => setCurrentSection('network')}
-            onMouseEnter={(e) => {
-              e.target.style.backgroundColor = 'rgba(0, 204, 255, 0.1)';
-              e.target.style.boxShadow = '0 0 20px rgba(0, 204, 255, 0.2)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.backgroundColor = 'rgba(0, 255, 0, 0.02)';
-              e.target.style.boxShadow = 'none';
-            }}
-          >
-            <div style={styles.menuCardTitle}>[ NETWORK LINK ]</div>
-            <div style={styles.menuCardDescription}>
-              Manage your connections
-            </div>
-          </div>
-        </div>
-
-        <div style={styles.syncStatus}>
-          <p>[ SYSTEM READY ] | [ {currentTime.toLocaleTimeString('it-IT')} ]</p>
+            [ ANNULLA ]
+          </button>
         </div>
       </div>
-    );
-  }
+    </>
+  );
 
-  if (currentSection === 'network') {
-    return <NetworkView onBack={() => setCurrentSection('home')} />;
-  }
+  const renderAuctionList = () => (
+    <>
+      <div style={styles.overlay} onClick={() => setShowAuctionList(false)} />
+      <div style={styles.auctionList}>
+        <h2 style={styles.auctionModalTitle}>[ SELEZIONA ASTA ]</h2>
+        {auctions.length === 0 ? (
+          <p style={{color: '#666', textAlign: 'center'}}>Nessuna asta creata</p>
+        ) : (
+          auctions.map(auction => (
+            <div
+              key={auction.id}
+              style={styles.auctionListItem}
+              onClick={() => loadAuction(auction)}
+              onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(255, 153, 0, 0.1)'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = 'rgba(255, 153, 0, 0.05)'}
+            >
+              <div>
+                <div style={styles.auctionListName}>{auction.name}</div>
+                <div style={styles.auctionListInfo}>
+                  Budget: {auction.budget} | Squadra: {auction.myTeam ? auction.myTeam.length : 0} giocatori
+                </div>
+              </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  deleteAuction(auction.id);
+                }}
+                style={{
+                  ...styles.button,
+                  padding: '5px 10px',
+                  fontSize: '10px',
+                  borderColor: '#ff4444',
+                  color: '#ff4444',
+                }}
+              >
+                X
+              </button>
+            </div>
+          ))
+        )}
+        {currentAuction && (
+          <div style={{marginTop: '15px', padding: '10px', borderTop: '1px solid #ff9900'}}>
+            <button
+              onClick={saveAuction}
+              style={{...styles.button, borderColor: '#00ccff', color: '#00ccff', width: '100%'}}
+            >
+              [ SALVA ASTA ATTIVA ]
+            </button>
+          </div>
+        )}
+        <div style={{display: 'flex', gap: '10px', justifyContent: 'center', marginTop: '15px'}}>
+          <button
+            onClick={() => {
+              setShowAuctionModal(true);
+            }}
+            style={{...styles.button, borderColor: '#ff9900', color: '#ff9900'}}
+          >
+            [ NUOVA ASTA ]
+          </button>
+          <button
+            onClick={() => setShowAuctionList(false)}
+            style={{...styles.button, borderColor: '#666', color: '#666'}}
+          >
+            [ CHIUDI ]
+          </button>
+        </div>
+      </div>
+    </>
+  );
 
-  if (currentSection === 'fantacalcio') {
-    return <FantacalcioView onBack={() => setCurrentSection('home')} />;
-  }
+  const renderTeamView = () => (
+    <div>
+      <h2 style={{color: '#00ff00', marginBottom: '15px'}}>[ LA MIA SQUADRA ]</h2>
+      
+      <div style={styles.statsPanel}>
+        <div style={styles.statText}>Asta: {currentAuction ? currentAuction.name : 'Nessuna'}</div>
+        <div style={styles.statText}>Budget iniziale: {budget} crediti</div>
+        <div style={styles.statText}>Crediti spesi: {getTotalSpent()} crediti</div>
+        <div style={styles.statText}>Crediti rimanenti: {getRemainingBudget()} crediti</div>
+        <div style={styles.statText}>Giocatori totali: {myTeam.length}</div>
+        <div style={styles.statText}>Portieri: {getRoleCount('Por')} (min 2, max 3)</div>
+        <div style={styles.statText}>Non portieri: {myTeam.length - getRoleCount('Por')} (min 25, max 27)</div>
+      </div>
+      
+      <h3 style={{color: '#00ccff', marginBottom: '10px'}}>[ GIOCATORI PER RUOLO ]</h3>
+      {allRoles.map(role => {
+        const count = getRoleCount(role);
+        if (count > 0) {
+          return (
+            <div key={role} style={styles.statText}>
+              {role} ({roleNames[role]}): {count}
+            </div>
+          );
+        }
+        return null;
+      })}
+      
+      <h3 style={{color: '#00ccff', marginBottom: '10px', marginTop: '20px'}}>[ ROSA ]</h3>
+      {myTeam.map(player => (
+        <div key={player.id} style={styles.teamCard}>
+          <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+            <div>
+              <div style={styles.playerName}>
+                {player.name}
+                {renderRoleBadges(player)}
+              </div>
+              <div style={styles.playerInfo}>
+                {player.team} | Pagato: {player.paidPrice} crediti
+              </div>
+            </div>
+            <button
+              onClick={() => removeFromTeam(player.id)}
+              style={{
+                ...styles.button,
+                padding: '5px 10px',
+                fontSize: '10px',
+                borderColor: '#ff4444',
+                color: '#ff4444',
+              }}
+            >
+              X
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 
   return (
     <div style={styles.container}>
-      <button 
-        style={styles.backButton}
-        onClick={() => {
-          setCurrentSection('home');
-          setShowAddGoal(false);
-        }}
-      >
+      <button style={styles.backButton} onClick={onBack}>
         [ ← BACK ]
       </button>
-
-      <h1 style={styles.sectionTitle}>[ OBJECTIVES ]</h1>
-
-      {error && (
-        <div style={styles.errorMessage}>
-          <p>{error}</p>
-          <button 
-            onClick={() => {
-              setError(null);
-              fetchGoals();
-            }}
-            style={{
-              marginTop: '10px',
-              padding: '8px 16px',
-              backgroundColor: 'transparent',
-              color: '#ff4444',
-              border: '1px solid #ff4444',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontFamily: "'Courier New', monospace",
-            }}
-          >
-            [ RETRY ]
-          </button>
-        </div>
-      )}
+      
+      <h1 style={styles.header}>[ FANTACALCIO ]</h1>
 
       <div style={styles.toolbar}>
         <button 
-          style={{...styles.button, borderColor: '#00ff00'}}
-          onClick={() => setShowAddGoal(!showAddGoal)}
+          style={styles.button}
+          onClick={() => {
+            setMainMode(mainMode === 'visualizza' ? 'asta' : 'visualizza');
+            setShowTeamView(false);
+          }}
         >
-          {showAddGoal ? '[CLOSE]' : '[NEW TASK]'}
+          {mainMode === 'visualizza' ? '[ MODALITA: VISUALIZZA ]' : '[ MODALITA: ASTA ]'}
         </button>
-
-        <div style={styles.dropdownContainer}>
-          <button 
-            style={{...styles.button, borderColor: '#ff9900', width: '100%'}}
-            onClick={() => setShowViewMenu(!showViewMenu)}
-          >
-            [VIEW: {viewMode === 'progress' ? 'PROG' : viewMode === 'calendar' ? 'CAL' : 'TODAY'}] ▼
+        
+        {mainMode === 'visualizza' && (
+          <button style={styles.buttonActive}>
+            [ LISTA ]
           </button>
-          {showViewMenu && (
-            <div style={styles.dropdownMenu}>
-              <button 
-                style={styles.dropdownItem}
-                onClick={() => {
-                  setViewMode('today');
-                  setShowViewMenu(false);
-                }}
+        )}
+        
+        {mainMode === 'asta' && (
+          <>
+            <button 
+              style={{...styles.button, borderColor: '#ff9900', color: '#ff9900'}}
+              onClick={() => {
+                setShowAuctionList(true);
+                setShowTeamView(false);
+              }}
+            >
+              [ SELEZIONA ASTA ]
+            </button>
+            <button 
+              style={showTeamView ? styles.buttonActive : styles.button}
+              onClick={() => setShowTeamView(!showTeamView)}
+            >
+              [ SQUADRA ]
+            </button>
+          </>
+        )}
+      </div>
+
+      {showAuctionModal && renderAuctionModal()}
+      {showAuctionList && renderAuctionList()}
+
+      {mainMode === 'visualizza' ? (
+        <div>
+          <h2 style={{color: '#00ff00', marginBottom: '15px'}}>[ CONSULTA GIOCATORI ]</h2>
+          {renderFilters()}
+          {Object.keys(groupedPlayers()).map(category => (
+            <div key={category}>
+              <h3 style={styles.categoryHeader}>{category}</h3>
+              {groupedPlayers()[category].map(player => renderPlayerCard(player, false))}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div>
+          {currentAuction ? (
+            <>
+              {showTeamView ? (
+                renderTeamView()
+              ) : (
+                <>
+                  <div style={{...styles.statsPanel, marginBottom: '15px'}}>
+                    <div style={styles.statText}>Asta: {currentAuction.name}</div>
+                    <div style={styles.statText}>Crediti rimanenti: {getRemainingBudget()} crediti</div>
+                    <div style={styles.statText}>Giocatori in squadra: {myTeam.length}</div>
+                  </div>
+                  {renderFilters()}
+                  {Object.keys(groupedPlayers()).map(category => (
+                    <div key={category}>
+                      <h3 style={styles.categoryHeader}>{category}</h3>
+                      {groupedPlayers()[category].map(player => renderPlayerCard(player, true))}
+                    </div>
+                  ))}
+                </>
+              )}
+            </>
+          ) : (
+            <div style={{textAlign: 'center', padding: '40px'}}>
+              <p style={{color: '#ff9900', fontSize: '16px', marginBottom: '20px'}}>
+                [ NESSUNA ASTA ATTIVA ]
+              </p>
+              <p style={{color: '#666', fontSize: '12px', marginBottom: '20px'}}>
+                Crea una nuova asta o seleziona un asta esistente
+              </p>
+              <button
+                style={{...styles.button, borderColor: '#ff9900', color: '#ff9900'}}
+                onClick={() => setShowAuctionList(true)}
               >
-                [ TODAY VIEW ]
-              </button>
-              <button 
-                style={styles.dropdownItem}
-                onClick={() => {
-                  setViewMode('progress');
-                  setShowViewMenu(false);
-                }}
-              >
-                [ PROGRESS VIEW ]
-              </button>
-              <button 
-                style={styles.dropdownItem}
-                onClick={() => {
-                  setViewMode('calendar');
-                  setShowViewMenu(false);
-                }}
-              >
-                [ CALENDAR VIEW ]
+                [ SELEZIONA ASTA ]
               </button>
             </div>
           )}
         </div>
-
-        <button 
-          style={{...styles.button, borderColor: '#ff4444', color: '#ff4444'}}
-          onClick={() => setShowDeleteAll(!showDeleteAll)}
-        >
-          {showDeleteAll ? '[CANCEL]' : '[PURGE ALL]'}
-        </button>
-      </div>
-
-      {showDeleteAll && (
-        <div style={styles.dangerZone}>
-          <h3 style={styles.dangerTitle}>⚠ WARNING: DESTRUCTIVE OPERATION</h3>
-          <p style={{textAlign: 'center', marginBottom: '15px', color: '#ff4444', fontSize: '11px'}}>
-            This action will permanently delete all tasks!
-          </p>
-          <div style={{display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap'}}>
-            <button 
-              style={{...styles.button, borderColor: '#ff4444', color: '#ff4444'}}
-              onClick={deleteAllGoals}
-            >
-              [ CONFIRM PURGE ]
-            </button>
-            <button 
-              style={{...styles.button, borderColor: '#666', color: '#666'}}
-              onClick={() => setShowDeleteAll(false)}
-            >
-              [ CANCEL ]
-            </button>
-          </div>
-        </div>
       )}
-
-      {showAddGoal && <GoalForm onAddGoal={addGoal} />}
-      
-      {viewMode === 'progress' ? (
-        <ProgressBars 
-          goals={goals} 
-          onDeleteGoal={deleteGoal}
-        />
-      ) : viewMode === 'calendar' ? (
-        <CalendarView 
-          goals={goals} 
-          onToggleDateCheck={toggleDateCheck}
-        />
-      ) : (
-        <TodayView 
-          goals={goals} 
-          onToggleCheck={toggleTodayCheck}
-        />
-      )}
-
-      <div style={styles.syncStatus}>
-        <p>[ SYNCED ] | [ TASKS: {goals.length} ]</p>
-      </div>
     </div>
   );
 }
 
-export default App;
+export default FantacalcioView;
